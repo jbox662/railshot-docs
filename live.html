@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#00A8E8">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/live.css?v=3">
+    <link rel="stylesheet" href="css/live.css?v=4">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 </head>
@@ -43,7 +43,7 @@
                 </div>
             </div>
 
-            <div class="live-layout">
+            <div class="live-layout" id="liveLayout">
                 <section class="video-panel shadow-pop" aria-label="Live video player">
                     <div class="video-wrapper">
                         <video id="livePlayer" controls muted autoplay playsinline></video>
@@ -64,13 +64,13 @@
                     </div>
                 </section>
 
-                <aside class="table-panel shadow-pop" aria-label="Table selector">
+                <aside class="table-panel shadow-pop" id="tablePanel" aria-label="Table selector">
                     <div class="table-panel-header">
                         <h3>Tables</h3>
                         <span id="tableCount" class="table-count"></span>
                     </div>
                     <ul id="tableList" class="table-list" role="listbox" aria-label="Live tables"></ul>
-                    <p class="table-panel-hint">Manage tables in the <a href="/admin/">admin panel</a></p>
+                    <p class="table-panel-hint">Switch the on-air camera in the <a href="/admin/">admin panel</a>.</p>
                 </aside>
             </div>
         </div>
@@ -86,7 +86,7 @@
 
     <script src="js/streams-config.js?v=5"></script>
     <script src="js/mediamtx-webrtc-reader.js?v=5"></script>
-    <script src="js/live.js?v=6"></script>
+    <script src="js/live.js?v=7"></script>
     <script>
         lucide.createIcons();
     </script>

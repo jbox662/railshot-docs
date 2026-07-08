@@ -33,12 +33,19 @@ if ($section === 'live') {
         ];
     }
 
+    $tableIds = array_column($tables, 'id');
+    $activeTableId = railshot_sanitize_table_id($body['activeTableId'] ?? '');
+    if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
+        $activeTableId = $tableIds[0] ?? '';
+    }
+
     $config['live'] = [
         'mediamtxHost' => trim($body['mediamtxHost'] ?? '160.153.184.255'),
         'useHttpsProxy' => !empty($body['useHttpsProxy']),
         'preferredProtocol' => in_array($body['preferredProtocol'] ?? '', ['hls', 'webrtc'], true)
             ? $body['preferredProtocol']
             : 'hls',
+        'activeTableId' => $activeTableId,
         'tables' => $tables,
     ];
 

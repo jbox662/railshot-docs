@@ -97,6 +97,14 @@
         0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
+.live-layout.viewer-locked {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.live-layout.viewer-locked .table-panel {
+    display: none;
+}
+
 .video-panel {
     overflow: hidden;
     min-width: 0;

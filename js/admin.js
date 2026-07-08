@@ -2,7 +2,9 @@
     const messageEl = document.getElementById('adminMessage');
     const tablesContainer = document.getElementById('tablesContainer');
     const mediamtxYamlEl = document.getElementById('mediamtxYaml');
+    const activeTableSelect = document.getElementById('activeTableId');
     let tables = Array.isArray(window.RAILSHOT_ADMIN_TABLES) ? window.RAILSHOT_ADMIN_TABLES : [];
+    let activeTableId = String(window.RAILSHOT_ACTIVE_TABLE_ID || '');
 
     function showMessage(text, isError) {
         if (!messageEl) return;
@@ -18,6 +20,23 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    function renderActiveTableSelect() {
+        if (!activeTableSelect) return;
+        const validIds = tables.map(function (t) { return t.id; }).filter(Boolean);
+        if (activeTableId === '' || validIds.indexOf(activeTableId) === -1) {
+            activeTableId = validIds[0] || '';
+        }
+        activeTableSelect.innerHTML = tables.map(function (table) {
+            const id = table.id || '';
+            const label = (table.name || id) + (id ? ' (' + id + ')' : '');
+            const selected = id === activeTableId ? ' selected' : '';
+            return '<option value="' + escapeHtml(id) + '"' + selected + '>' + escapeHtml(label) + '</option>';
+        }).join('');
+        if (!tables.length) {
+            activeTableSelect.innerHTML = '<option value="">No tables configured</option>';
+        }
     }
 
     function renderTables() {
@@ -56,6 +75,8 @@
                 });
             });
         });
+
+        renderActiveTableSelect();
     }
 
     function readLiveForm() {
@@ -66,6 +87,7 @@
             mediamtxHost: data.get('mediamtxHost'),
             preferredProtocol: data.get('preferredProtocol'),
             useHttpsProxy: form.querySelector('[name="useHttpsProxy"]').checked,
+            activeTableId: activeTableSelect ? activeTableSelect.value : activeTableId,
             tables: tables
         };
     }
@@ -104,6 +126,10 @@
         return result;
     }
 
+    activeTableSelect?.addEventListener('change', function () {
+        activeTableId = activeTableSelect.value;
+    });
+
     document.getElementById('addTableBtn')?.addEventListener('click', function () {
         const next = tables.length + 1;
         tables.push({
@@ -121,7 +147,10 @@
             if (result.mediamtxYaml && mediamtxYamlEl) {
                 mediamtxYamlEl.value = result.mediamtxYaml;
             }
-            showMessage('Live camera settings saved.');
+            if (activeTableSelect) {
+                activeTableId = activeTableSelect.value;
+            }
+            showMessage('Live camera settings saved. Viewers now see: ' + (activeTableSelect?.selectedOptions[0]?.text || 'on-air table') + '.');
         } catch (err) {
             showMessage(err.message, true);
         }
@@ -161,4 +190,5 @@
     });
 
     renderTables();
+    renderActiveTableSelect();
 })();

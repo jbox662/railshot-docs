@@ -28,6 +28,7 @@ function railshot_default_config(): array
             'mediamtxHost' => '160.153.184.255',
             'useHttpsProxy' => true,
             'preferredProtocol' => 'hls',
+            'activeTableId' => 'table1',
             'tables' => [
                 [
                     'id' => 'table1',
@@ -210,19 +211,37 @@ function railshot_public_live_config(): array
     $live = $config['live'] ?? [];
     $urls = railshot_build_live_urls($live);
 
-    $tables = [];
+    $allTables = [];
     foreach ($live['tables'] ?? [] as $table) {
         if (empty($table['id']) || empty($table['name'])) {
             continue;
         }
-        $tables[] = [
+        $allTables[] = [
             'id' => $table['id'],
             'name' => $table['name'],
             'description' => $table['description'] ?? '',
         ];
     }
 
-    return array_merge($urls, ['tables' => $tables]);
+    $activeId = railshot_sanitize_table_id($live['activeTableId'] ?? '');
+    $activeTable = null;
+    foreach ($allTables as $table) {
+        if ($table['id'] === $activeId) {
+            $activeTable = $table;
+            break;
+        }
+    }
+    if ($activeTable === null && $allTables !== []) {
+        $activeTable = $allTables[0];
+    }
+
+    $publicTables = $activeTable !== null ? [$activeTable] : [];
+
+    return array_merge($urls, [
+        'tables' => $publicTables,
+        'viewerLocked' => true,
+        'activeTableId' => $activeTable['id'] ?? '',
+    ]);
 }
 
 function railshot_sanitize_table_id(string $id): string

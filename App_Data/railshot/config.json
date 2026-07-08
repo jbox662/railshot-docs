@@ -3,6 +3,7 @@
         "mediamtxHost": "160.153.184.255",
         "useHttpsProxy": true,
         "preferredProtocol": "hls",
+        "activeTableId": "table1",
         "tables": [
             {
                 "id": "table1",

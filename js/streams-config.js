@@ -32,6 +32,8 @@
         webrtcBaseUrl: webrtcBaseUrl,
         hlsBaseUrl: hlsBaseUrl,
         preferredProtocol: preferredProtocol,
+        viewerLocked: true,
+        activeTableId: 'table1',
 
         tables: [
             {

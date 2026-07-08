@@ -39,7 +39,7 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
 
         <section class="admin-panel">
             <h2>Live cameras / tables</h2>
-            <p class="admin-hint">Each table <code>id</code> must match a path in MediaMTX on your VPS. RTSP URLs are stored here for admin use only.</p>
+            <p class="admin-hint">Viewers on <a href="/live.html" target="_blank">live.html</a> only see the <strong>on-air</strong> table you pick below — they cannot switch cameras.</p>
 
             <form id="liveForm" class="admin-form-grid">
                 <label>MediaMTX host (VPS IP)
@@ -54,6 +54,9 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
                 <label class="admin-checkbox">
                     <input type="checkbox" name="useHttpsProxy" <?= !empty($live['useHttpsProxy']) ? 'checked' : '' ?>>
                     Use HTTPS proxy paths on production site (<code>/live-hls</code>, <code>/live-webrtc</code>)
+                </label>
+                <label>On-air table (viewers only see this stream)
+                    <select name="activeTableId" id="activeTableId"></select>
                 </label>
             </form>
 
@@ -116,6 +119,7 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
 
     <script>
         window.RAILSHOT_ADMIN_TABLES = <?= json_encode($live['tables'] ?? [], JSON_UNESCAPED_SLASHES) ?>;
+        window.RAILSHOT_ACTIVE_TABLE_ID = <?= json_encode($live['activeTableId'] ?? '', JSON_UNESCAPED_SLASHES) ?>;
     </script>
     <script src="/js/admin.js"></script>
 </body>

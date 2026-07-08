@@ -18,10 +18,14 @@
     const videoWrapperEl = document.querySelector('.video-wrapper');
     const videoFitFillBtn = document.getElementById('videoFitFill');
     const videoFitFullBtn = document.getElementById('videoFitFull');
+    const liveLayoutEl = document.getElementById('liveLayout');
+    const tablePanelEl = document.getElementById('tablePanel');
 
     const VIDEO_FIT_KEY = 'railshot_video_fit';
+    const CONFIG_POLL_MS = 20000;
 
     let config = null;
+    let currentTableId = null;
     let currentReader = null;
     let currentHls = null;
     let usingFallback = false;
@@ -79,6 +83,16 @@
         }
         if (videoFitFullBtn) {
             videoFitFullBtn.addEventListener('click', function () { setVideoFit('full'); });
+        }
+    }
+
+    function applyViewerLayout() {
+        const locked = config && config.viewerLocked !== false;
+        if (liveLayoutEl) {
+            liveLayoutEl.classList.toggle('viewer-locked', locked);
+        }
+        if (tablePanelEl) {
+            tablePanelEl.hidden = locked;
         }
     }
 
@@ -198,6 +212,7 @@
     function loadTable(table) {
         if (!table) return;
 
+        currentTableId = table.id;
         titleEl.textContent = table.name;
         descEl.textContent = table.description || '';
 
@@ -227,12 +242,21 @@
             return t && t.id && t.name;
         });
 
-        tableListEl.innerHTML = '';
-        tableCountEl.textContent = tables.length === 1 ? '1 table' : tables.length + ' tables';
+        applyViewerLayout();
+
+        if (tableListEl) tableListEl.innerHTML = '';
+        if (tableCountEl) {
+            tableCountEl.textContent = tables.length === 1 ? '1 table' : tables.length + ' tables';
+        }
 
         if (!tables.length) {
-            showOverlay('No tables configured yet. Use the admin panel.', true);
-            setStatus('error', 'No tables');
+            showOverlay('No live stream on air. Choose a table in the admin panel.', true);
+            setStatus('error', 'Off air');
+            return;
+        }
+
+        if (config.viewerLocked !== false) {
+            loadTable(tables[0]);
             return;
         }
 
@@ -259,6 +283,42 @@
         });
     }
 
+    async function refreshActiveStream() {
+        const nextConfig = await loadConfig();
+        if (!nextConfig || !Array.isArray(nextConfig.tables)) {
+            return;
+        }
+
+        const nextTable = nextConfig.tables[0];
+        const nextId = nextTable ? nextTable.id : null;
+
+        config.webrtcBaseUrl = nextConfig.webrtcBaseUrl;
+        config.hlsBaseUrl = nextConfig.hlsBaseUrl;
+        config.preferredProtocol = nextConfig.preferredProtocol;
+        config.tables = nextConfig.tables;
+        config.activeTableId = nextConfig.activeTableId;
+
+        if (nextId && nextId !== currentTableId) {
+            loadTable(nextTable);
+        } else if (!nextId && currentTableId) {
+            currentTableId = null;
+            cleanupPlayer();
+            showOverlay('No live stream on air. Choose a table in the admin panel.', true);
+            setStatus('error', 'Off air');
+        }
+    }
+
+    function startConfigPolling() {
+        if (config.viewerLocked === false) {
+            return;
+        }
+        window.setInterval(function () {
+            refreshActiveStream().catch(function (err) {
+                console.warn('Live config poll failed:', err);
+            });
+        }, CONFIG_POLL_MS);
+    }
+
     async function loadConfig() {
         try {
             const response = await fetch('/api/live-config.php', { cache: 'no-store' });
@@ -282,6 +342,7 @@
 
         buildTableList();
         initVideoFitControls();
+        startConfigPolling();
     }
 
     window.addEventListener('beforeunload', cleanupPlayer);
