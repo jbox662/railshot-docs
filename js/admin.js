@@ -1,10 +1,8 @@
 (function () {
     const messageEl = document.getElementById('adminMessage');
-    const tablesContainer = document.getElementById('tablesContainer');
+    const venuesContainer = document.getElementById('venuesContainer');
     const mediamtxYamlEl = document.getElementById('mediamtxYaml');
-    const activeTableSelect = document.getElementById('activeTableId');
-    let tables = Array.isArray(window.RAILSHOT_ADMIN_TABLES) ? window.RAILSHOT_ADMIN_TABLES : [];
-    let activeTableId = String(window.RAILSHOT_ACTIVE_TABLE_ID || '');
+    let venues = Array.isArray(window.RAILSHOT_ADMIN_VENUES) ? window.RAILSHOT_ADMIN_VENUES : [];
 
     function showMessage(text, isError) {
         if (!messageEl) return;
@@ -22,61 +20,129 @@
             .replace(/"/g, '&quot;');
     }
 
-    function renderActiveTableSelect() {
-        if (!activeTableSelect) return;
-        const validIds = tables.map(function (t) { return t.id; }).filter(Boolean);
-        if (activeTableId === '' || validIds.indexOf(activeTableId) === -1) {
-            activeTableId = validIds[0] || '';
-        }
-        activeTableSelect.innerHTML = tables.map(function (table) {
+    function tableOptionsHtml(tables, selectedId) {
+        return (tables || []).map(function (table) {
             const id = table.id || '';
             const label = (table.name || id) + (id ? ' (' + id + ')' : '');
-            const selected = id === activeTableId ? ' selected' : '';
+            const selected = id === selectedId ? ' selected' : '';
             return '<option value="' + escapeHtml(id) + '"' + selected + '>' + escapeHtml(label) + '</option>';
         }).join('');
-        if (!tables.length) {
-            activeTableSelect.innerHTML = '<option value="">No tables configured</option>';
-        }
     }
 
-    function renderTables() {
-        if (!tablesContainer) return;
-        tablesContainer.innerHTML = tables.map(function (table, index) {
+    function renderVenues() {
+        if (!venuesContainer) return;
+
+        venuesContainer.innerHTML = venues.map(function (venue, venueIndex) {
+            const tables = venue.tables || [];
+            const activeTableId = venue.activeTableId || (tables[0] && tables[0].id) || '';
+
+            const tablesHtml = tables.map(function (table, tableIndex) {
+                return (
+                    '<div class="admin-table-card admin-nested-table" data-venue="' + venueIndex + '" data-table="' + tableIndex + '">' +
+                        '<div class="admin-table-card-header">' +
+                            '<strong>Camera ' + (tableIndex + 1) + '</strong>' +
+                            '<button type="button" class="admin-remove-btn" data-remove-table data-venue="' + venueIndex + '" data-table="' + tableIndex + '">Remove</button>' +
+                        '</div>' +
+                        '<div class="admin-table-card-grid">' +
+                            '<label>Path ID <input data-venue-field="tables" data-table-field="id" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
+                            '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
+                            '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
+                            '<label class="full-width">RTSP URL <input data-venue-field="tables" data-table-field="rtspUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.rtspUrl || '') + '"></label>' +
+                        '</div>' +
+                    '</div>'
+                );
+            }).join('');
+
             return (
-                '<div class="admin-table-card" data-index="' + index + '">' +
+                '<div class="admin-table-card admin-venue-card" data-venue-index="' + venueIndex + '">' +
                     '<div class="admin-table-card-header">' +
-                        '<strong>Table ' + (index + 1) + '</strong>' +
-                        '<button type="button" class="admin-remove-btn" data-remove="' + index + '">Remove</button>' +
+                        '<strong>Venue ' + (venueIndex + 1) + '</strong>' +
+                        '<button type="button" class="admin-remove-btn" data-remove-venue="' + venueIndex + '">Remove venue</button>' +
                     '</div>' +
                     '<div class="admin-table-card-grid">' +
-                        '<label>Path ID (MediaMTX) <input data-field="id" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
-                        '<label>Display name <input data-field="name" value="' + escapeHtml(table.name || '') + '" placeholder="Table 1"></label>' +
-                        '<label class="full-width">Description <input data-field="description" value="' + escapeHtml(table.description || '') + '"></label>' +
-                        '<label class="full-width">RTSP URL <input data-field="rtspUrl" value="' + escapeHtml(table.rtspUrl || '') + '" placeholder="rtsp://user:pass@host:554/..."></label>' +
+                        '<label>Venue ID (URL) <input data-venue-field="id" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.id || '') + '" placeholder="main-hall"></label>' +
+                        '<label>Venue name <input data-venue-field="name" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.name || '') + '"></label>' +
+                        '<label>Location <input data-venue-field="location" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.location || '') + '"></label>' +
+                        '<label>Tagline <input data-venue-field="tagline" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.tagline || '') + '" placeholder="Live now"></label>' +
+                        '<label class="full-width">Description <textarea data-venue-field="description" data-venue="' + venueIndex + '" rows="2">' + escapeHtml(venue.description || '') + '</textarea></label>' +
+                        '<label class="full-width">Card image URL <input data-venue-field="image" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.image || '/images/logo.png') + '"></label>' +
+                        '<label class="full-width">On-air camera (viewers see this) ' +
+                            '<select data-venue-field="activeTableId" data-venue="' + venueIndex + '">' + tableOptionsHtml(tables, activeTableId) + '</select>' +
+                        '</label>' +
                     '</div>' +
+                    '<div class="admin-nested-header">' +
+                        '<h4>Cameras / tables</h4>' +
+                        '<button type="button" class="btn btn-secondary btn-small" data-add-table="' + venueIndex + '">+ Add camera</button>' +
+                    '</div>' +
+                    tablesHtml +
                 '</div>'
             );
         }).join('');
 
-        tablesContainer.querySelectorAll('[data-remove]').forEach(function (btn) {
+        venuesContainer.querySelectorAll('[data-remove-venue]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                const idx = Number(btn.getAttribute('data-remove'));
-                tables.splice(idx, 1);
-                renderTables();
+                venues.splice(Number(btn.getAttribute('data-remove-venue')), 1);
+                renderVenues();
             });
         });
 
-        tablesContainer.querySelectorAll('.admin-table-card').forEach(function (card) {
-            const index = Number(card.getAttribute('data-index'));
-            card.querySelectorAll('[data-field]').forEach(function (input) {
-                input.addEventListener('input', function () {
-                    const field = input.getAttribute('data-field');
-                    tables[index][field] = input.value;
+        venuesContainer.querySelectorAll('[data-remove-table]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const vi = Number(btn.getAttribute('data-venue'));
+                const ti = Number(btn.getAttribute('data-table'));
+                venues[vi].tables.splice(ti, 1);
+                renderVenues();
+            });
+        });
+
+        venuesContainer.querySelectorAll('[data-add-table]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const vi = Number(btn.getAttribute('data-add-table'));
+                const next = (venues[vi].tables || []).length + 1;
+                venues[vi].tables = venues[vi].tables || [];
+                venues[vi].tables.push({
+                    id: 'table' + next,
+                    name: 'Table ' + next,
+                    description: '',
+                    rtspUrl: ''
                 });
+                renderVenues();
             });
         });
 
-        renderActiveTableSelect();
+        venuesContainer.querySelectorAll('[data-venue-field]').forEach(function (input) {
+            input.addEventListener('input', function () {
+                const vi = Number(input.getAttribute('data-venue'));
+                const field = input.getAttribute('data-venue-field');
+                const tableField = input.getAttribute('data-table-field');
+                if (field === 'tables') {
+                    const ti = Number(input.getAttribute('data-table'));
+                    venues[vi].tables[ti][tableField] = input.value;
+                } else {
+                    venues[vi][field] = input.value;
+                }
+            });
+            input.addEventListener('change', function () {
+                if (input.getAttribute('data-venue-field') === 'activeTableId') {
+                    const vi = Number(input.getAttribute('data-venue'));
+                    venues[vi].activeTableId = input.value;
+                }
+            });
+        });
+    }
+
+    function readLandingForm() {
+        const form = document.getElementById('landingForm');
+        const data = new FormData(form);
+        const bullets = String(data.get('bullets') || '')
+            .split('\n')
+            .map(function (line) { return line.trim(); })
+            .filter(Boolean);
+        return {
+            headline: data.get('headline'),
+            subtitle: data.get('subtitle'),
+            bullets: bullets
+        };
     }
 
     function readLiveForm() {
@@ -87,8 +153,8 @@
             mediamtxHost: data.get('mediamtxHost'),
             preferredProtocol: data.get('preferredProtocol'),
             useHttpsProxy: form.querySelector('[name="useHttpsProxy"]').checked,
-            activeTableId: activeTableSelect ? activeTableSelect.value : activeTableId,
-            tables: tables
+            landing: readLandingForm(),
+            venues: venues
         };
     }
 
@@ -126,19 +192,24 @@
         return result;
     }
 
-    activeTableSelect?.addEventListener('change', function () {
-        activeTableId = activeTableSelect.value;
-    });
-
-    document.getElementById('addTableBtn')?.addEventListener('click', function () {
-        const next = tables.length + 1;
-        tables.push({
-            id: 'table' + next,
-            name: 'Table ' + next,
+    document.getElementById('addVenueBtn')?.addEventListener('click', function () {
+        const next = venues.length + 1;
+        venues.push({
+            id: 'venue-' + next,
+            name: 'Venue ' + next,
+            location: '',
             description: '',
-            rtspUrl: ''
+            tagline: 'Live now',
+            image: '/images/logo.png',
+            activeTableId: 'table1',
+            tables: [{
+                id: 'table1',
+                name: 'Table 1',
+                description: '',
+                rtspUrl: ''
+            }]
         });
-        renderTables();
+        renderVenues();
     });
 
     document.getElementById('saveLiveBtn')?.addEventListener('click', async function () {
@@ -147,10 +218,7 @@
             if (result.mediamtxYaml && mediamtxYamlEl) {
                 mediamtxYamlEl.value = result.mediamtxYaml;
             }
-            if (activeTableSelect) {
-                activeTableId = activeTableSelect.value;
-            }
-            showMessage('Live camera settings saved. Viewers now see: ' + (activeTableSelect?.selectedOptions[0]?.text || 'on-air table') + '.');
+            showMessage('Live settings saved. Venues updated on live.html.');
         } catch (err) {
             showMessage(err.message, true);
         }
@@ -189,6 +257,5 @@
         });
     });
 
-    renderTables();
-    renderActiveTableSelect();
+    renderVenues();
 })();

@@ -11,7 +11,10 @@ railshot_require_login();
 $config = railshot_load_config();
 $live = $config['live'] ?? [];
 $site = $config['site'] ?? [];
-$mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
+$landing = $live['landing'] ?? railshot_default_config()['live']['landing'];
+$venues = railshot_normalize_venues($live);
+$mediamtxYaml = railshot_generate_mediamtx_yaml(railshot_collect_all_tables($live));
+$landingBullets = implode("\n", $landing['bullets'] ?? []);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,9 +41,23 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
         <div id="adminMessage" class="admin-message hidden" role="status"></div>
 
         <section class="admin-panel">
-            <h2>Live cameras / tables</h2>
-            <p class="admin-hint">Viewers on <a href="/live.html" target="_blank">live.html</a> only see the <strong>on-air</strong> table you pick below — they cannot switch cameras.</p>
+            <h2>Live landing page</h2>
+            <p class="admin-hint">Marketing copy on <a href="/live.html" target="_blank">live.html</a> before viewers pick a venue.</p>
+            <form id="landingForm" class="admin-form-grid">
+                <label class="full-width">Headline
+                    <input type="text" name="headline" value="<?= htmlspecialchars($landing['headline'] ?? '') ?>">
+                </label>
+                <label class="full-width">Subtitle
+                    <textarea name="subtitle" rows="3"><?= htmlspecialchars($landing['subtitle'] ?? '') ?></textarea>
+                </label>
+                <label class="full-width">Bullet points (one per line)
+                    <textarea name="bullets" rows="4" placeholder="Feature one&#10;Feature two"><?= htmlspecialchars($landingBullets) ?></textarea>
+                </label>
+            </form>
+        </section>
 
+        <section class="admin-panel">
+            <h2>Streaming server</h2>
             <form id="liveForm" class="admin-form-grid">
                 <label>MediaMTX host (VPS IP)
                     <input type="text" name="mediamtxHost" value="<?= htmlspecialchars($live['mediamtxHost'] ?? '') ?>" required>
@@ -51,21 +68,23 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
                         <option value="webrtc" <?= ($live['preferredProtocol'] ?? '') === 'webrtc' ? 'selected' : '' ?>>WebRTC (lower latency)</option>
                     </select>
                 </label>
-                <label class="admin-checkbox">
+                <label class="admin-checkbox full-width">
                     <input type="checkbox" name="useHttpsProxy" <?= !empty($live['useHttpsProxy']) ? 'checked' : '' ?>>
-                    Use HTTPS proxy paths on production site (<code>/live-hls</code>, <code>/live-webrtc</code>)
-                </label>
-                <label>On-air table (viewers only see this stream)
-                    <select name="activeTableId" id="activeTableId"></select>
+                    Use HTTPS proxy on production (<code>/api/hls.php</code>, <code>/api/webrtc.php</code>)
                 </label>
             </form>
+        </section>
+
+        <section class="admin-panel">
+            <h2>Venues &amp; cameras</h2>
+            <p class="admin-hint">Each venue appears on the live page. Viewers pick a venue, then watch the <strong>on-air</strong> camera you select for that venue.</p>
 
             <div class="admin-table-editor">
                 <div class="admin-table-editor-header">
-                    <h3>Tables</h3>
-                    <button type="button" id="addTableBtn" class="btn btn-secondary">+ Add table</button>
+                    <h3>Venues</h3>
+                    <button type="button" id="addVenueBtn" class="btn btn-secondary">+ Add venue</button>
                 </div>
-                <div id="tablesContainer"></div>
+                <div id="venuesContainer"></div>
             </div>
 
             <div class="admin-actions">
@@ -97,7 +116,7 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
 
         <section class="admin-panel">
             <h2>MediaMTX paths (copy to VPS)</h2>
-            <p class="admin-hint">After saving cameras, copy this into <code>C:\mediamtx\mediamtx.yml</code> on your VPS and restart MediaMTX.</p>
+            <p class="admin-hint">After saving cameras, copy paths into <code>mediamtx.yml</code> on your VPS (or use <code>pull-table1.bat</code> per table).</p>
             <textarea id="mediamtxYaml" class="admin-code" rows="12" readonly><?= htmlspecialchars($mediamtxYaml) ?></textarea>
             <div class="admin-actions">
                 <button type="button" id="copyYamlBtn" class="btn btn-secondary">Copy YAML</button>
@@ -118,9 +137,9 @@ $mediamtxYaml = railshot_generate_mediamtx_yaml($live['tables'] ?? []);
     </main>
 
     <script>
-        window.RAILSHOT_ADMIN_TABLES = <?= json_encode($live['tables'] ?? [], JSON_UNESCAPED_SLASHES) ?>;
-        window.RAILSHOT_ACTIVE_TABLE_ID = <?= json_encode($live['activeTableId'] ?? '', JSON_UNESCAPED_SLASHES) ?>;
+        window.RAILSHOT_ADMIN_LANDING = <?= json_encode($landing, JSON_UNESCAPED_SLASHES) ?>;
+        window.RAILSHOT_ADMIN_VENUES = <?= json_encode($venues, JSON_UNESCAPED_SLASHES) ?>;
     </script>
-    <script src="/js/admin.js"></script>
+    <script src="/js/admin.js?v=2"></script>
 </body>
 </html>

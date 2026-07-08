@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Watch Live - RailShot TV</title>
+    <meta name="description" content="Watch live billiard tables on RailShot TV.">
+    <meta name="theme-color" content="#00A8E8">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/live.css?v=5">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+</head>
+<body class="live-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                    <span>RailShot TV</span>
+                </a>
+                <nav class="nav">
+                    <a href="live.html" class="nav-link active">Live</a>
+                    <a href="index.html#features" class="nav-link">Features</a>
+                    <a href="index.html#contact" class="nav-link">Contact</a>
+                    <a href="index.html#download" class="nav-link">Download</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="live-main">
+        <div class="live-container">
+            <div class="live-header">
+                <div>
+                    <a href="live.html" class="live-back-link">&larr; All venues</a>
+                    <p class="live-eyebrow" id="venueEyebrow">Livestream</p>
+                    <h1 class="live-title" id="venueTitle">Live</h1>
+                </div>
+                <div class="live-status" id="liveStatus" aria-live="polite">
+                    <span class="live-status-dot"></span>
+                    <span id="liveStatusText">Connecting…</span>
+                </div>
+            </div>
+
+            <div class="live-layout viewer-locked" id="liveLayout">
+                <section class="video-panel shadow-pop" aria-label="Live video player">
+                    <div class="video-wrapper">
+                        <video id="livePlayer" controls muted autoplay playsinline></video>
+                        <div id="loadingOverlay" class="video-overlay">
+                            <div class="overlay-spinner"></div>
+                            <p id="overlayMessage">Loading stream…</p>
+                        </div>
+                    </div>
+                    <div class="video-meta">
+                        <h2 id="currentTableTitle">Live</h2>
+                        <p id="currentTableDescription" class="video-meta-desc"></p>
+                        <div class="video-view-controls" role="group" aria-label="Video display mode">
+                            <span class="video-view-label">View</span>
+                            <button type="button" class="video-view-btn active" id="videoFitFill" aria-pressed="true" title="Fill the player edge to edge">Fill</button>
+                            <button type="button" class="video-view-btn" id="videoFitFull" aria-pressed="false" title="Show the entire camera image">Full</button>
+                        </div>
+                        <p id="protocolBadge" class="protocol-badge hidden"></p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer live-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 RailShot TV. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/streams-config.js?v=6"></script>
+    <script src="js/mediamtx-webrtc-reader.js?v=6"></script>
+    <script src="js/live.js?v=8"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

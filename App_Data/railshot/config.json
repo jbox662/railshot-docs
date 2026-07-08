@@ -3,13 +3,32 @@
         "mediamtxHost": "160.153.184.255",
         "useHttpsProxy": true,
         "preferredProtocol": "hls",
-        "activeTableId": "table1",
-        "tables": [
+        "landing": {
+            "headline": "Watch Live Billiard Action",
+            "subtitle": "Stream tournament tables, league nights, and hall favorites from venues powered by RailShot TV — free for viewers, professional quality for operators.",
+            "bullets": [
+                "Multiple tables streaming from your favorite venue",
+                "Switch cameras instantly — controlled by the hall",
+                "Works in your browser — no app required"
+            ]
+        },
+        "venues": [
             {
-                "id": "table1",
-                "name": "Test Camera",
-                "description": "192.168.68.89",
-                "rtspUrl": "rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main"
+                "id": "main-hall",
+                "name": "Main Hall",
+                "location": "Your Venue",
+                "description": "Watch live billiard tables from our main streaming venue.",
+                "tagline": "Live now",
+                "image": "/images/logo.png",
+                "activeTableId": "table1",
+                "tables": [
+                    {
+                        "id": "table1",
+                        "name": "Test Camera",
+                        "description": "192.168.68.89",
+                        "rtspUrl": "rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main"
+                    }
+                ]
             }
         ]
     },

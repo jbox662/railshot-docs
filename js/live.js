@@ -284,7 +284,21 @@
     }
 
     async function refreshActiveStream() {
-        const nextConfig = await loadConfig();
+        const params = new URLSearchParams(window.location.search);
+        const venueId = params.get('venue') || '';
+        const configUrl = venueId
+            ? '/api/live-config.php?venue=' + encodeURIComponent(venueId)
+            : '/api/live-config.php';
+
+        let nextConfig = null;
+        try {
+            const response = await fetch(configUrl, { cache: 'no-store' });
+            if (response.ok) {
+                nextConfig = await response.json();
+            }
+        } catch (err) {
+            return;
+        }
         if (!nextConfig || !Array.isArray(nextConfig.tables)) {
             return;
         }
@@ -320,8 +334,14 @@
     }
 
     async function loadConfig() {
+        const params = new URLSearchParams(window.location.search);
+        const venueId = params.get('venue') || '';
+        const configUrl = venueId
+            ? '/api/live-config.php?venue=' + encodeURIComponent(venueId)
+            : '/api/live-config.php';
+
         try {
-            const response = await fetch('/api/live-config.php', { cache: 'no-store' });
+            const response = await fetch(configUrl, { cache: 'no-store' });
             if (response.ok) {
                 return await response.json();
             }
@@ -329,6 +349,20 @@
             console.warn('API config unavailable, using fallback:', err);
         }
         return window.RAILSHOT_LIVE_CONFIG || null;
+    }
+
+    function applyVenueHeader() {
+        const titleEl = document.getElementById('venueTitle');
+        const eyebrowEl = document.getElementById('venueEyebrow');
+        if (titleEl && config.venueName) {
+            titleEl.textContent = config.venueName;
+        }
+        if (eyebrowEl && config.venueName) {
+            eyebrowEl.textContent = 'Live at ' + config.venueName;
+        }
+        if (!config.venueId && window.location.pathname.indexOf('watch.html') !== -1) {
+            window.location.replace('live.html');
+        }
     }
 
     async function init() {
@@ -340,6 +374,7 @@
             return;
         }
 
+        applyVenueHeader();
         buildTableList();
         initVideoFitControls();
         startConfigPolling();

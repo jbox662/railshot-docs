@@ -16,27 +16,57 @@ $section = $body['section'] ?? '';
 $config = railshot_load_config();
 
 if ($section === 'live') {
-    $tables = [];
-    foreach ($body['tables'] ?? [] as $table) {
-        $id = railshot_sanitize_table_id($table['id'] ?? '');
-        $name = trim($table['name'] ?? '');
-        $description = trim($table['description'] ?? '');
-        $rtspUrl = trim($table['rtspUrl'] ?? '');
-        if ($id === '' || $name === '') {
+    $venues = [];
+    foreach ($body['venues'] ?? [] as $venue) {
+        if (!is_array($venue)) {
             continue;
         }
-        $tables[] = [
-            'id' => $id,
-            'name' => $name,
-            'description' => $description,
-            'rtspUrl' => $rtspUrl,
+        $venueId = railshot_sanitize_venue_id($venue['id'] ?? '');
+        $venueName = trim($venue['name'] ?? '');
+        if ($venueId === '' || $venueName === '') {
+            continue;
+        }
+
+        $tables = [];
+        foreach ($venue['tables'] ?? [] as $table) {
+            $id = railshot_sanitize_table_id($table['id'] ?? '');
+            $name = trim($table['name'] ?? '');
+            if ($id === '' || $name === '') {
+                continue;
+            }
+            $tables[] = [
+                'id' => $id,
+                'name' => $name,
+                'description' => trim($table['description'] ?? ''),
+                'rtspUrl' => trim($table['rtspUrl'] ?? ''),
+            ];
+        }
+
+        $tableIds = array_column($tables, 'id');
+        $activeTableId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
+        if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
+            $activeTableId = $tableIds[0] ?? '';
+        }
+
+        $venues[] = [
+            'id' => $venueId,
+            'name' => $venueName,
+            'location' => trim($venue['location'] ?? ''),
+            'description' => trim($venue['description'] ?? ''),
+            'tagline' => trim($venue['tagline'] ?? ''),
+            'image' => trim($venue['image'] ?? '/images/logo.png') ?: '/images/logo.png',
+            'activeTableId' => $activeTableId,
+            'tables' => $tables,
         ];
     }
 
-    $tableIds = array_column($tables, 'id');
-    $activeTableId = railshot_sanitize_table_id($body['activeTableId'] ?? '');
-    if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
-        $activeTableId = $tableIds[0] ?? '';
+    $landing = $body['landing'] ?? [];
+    $bullets = [];
+    foreach ($landing['bullets'] ?? [] as $bullet) {
+        $bullet = trim((string) $bullet);
+        if ($bullet !== '') {
+            $bullets[] = $bullet;
+        }
     }
 
     $config['live'] = [
@@ -45,8 +75,12 @@ if ($section === 'live') {
         'preferredProtocol' => in_array($body['preferredProtocol'] ?? '', ['hls', 'webrtc'], true)
             ? $body['preferredProtocol']
             : 'hls',
-        'activeTableId' => $activeTableId,
-        'tables' => $tables,
+        'landing' => [
+            'headline' => trim($landing['headline'] ?? ''),
+            'subtitle' => trim($landing['subtitle'] ?? ''),
+            'bullets' => $bullets,
+        ],
+        'venues' => $venues,
     ];
 
     if (!railshot_save_config($config)) {
@@ -55,7 +89,7 @@ if ($section === 'live') {
 
     railshot_json_response([
         'ok' => true,
-        'mediamtxYaml' => railshot_generate_mediamtx_yaml($tables),
+        'mediamtxYaml' => railshot_generate_mediamtx_yaml(railshot_collect_all_tables($config['live'])),
     ]);
 }
 

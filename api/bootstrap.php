@@ -28,15 +28,37 @@ function railshot_default_config(): array
             'mediamtxHost' => '160.153.184.255',
             'useHttpsProxy' => true,
             'preferredProtocol' => 'hls',
-            'activeTableId' => 'table1',
-            'tables' => [
-                [
-                    'id' => 'table1',
-                    'name' => 'Test Camera',
-                    'description' => '192.168.68.89',
-                    'rtspUrl' => 'rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main',
+            'landing' => [
+                'headline' => 'Watch Live Billiard Action',
+                'subtitle' => 'Stream tournament tables, league nights, and hall favorites from venues powered by RailShot TV — free for viewers, professional quality for operators.',
+                'bullets' => [
+                    'Multiple tables streaming from your favorite venue',
+                    'Switch cameras instantly — controlled by the hall',
+                    'Works in your browser — no app required',
                 ],
             ],
+            'venues' => [
+                [
+                    'id' => 'main-hall',
+                    'name' => 'Main Hall',
+                    'location' => 'Your Venue',
+                    'description' => 'Watch live billiard tables from our main streaming venue.',
+                    'tagline' => 'Live now',
+                    'image' => '/images/logo.png',
+                    'activeTableId' => 'table1',
+                    'tables' => [
+                        [
+                            'id' => 'table1',
+                            'name' => 'Test Camera',
+                            'description' => '192.168.68.89',
+                            'rtspUrl' => 'rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main',
+                        ],
+                    ],
+                ],
+            ],
+            // Legacy fields kept for migration from older configs:
+            'activeTableId' => 'table1',
+            'tables' => [],
         ],
         'site' => [
             'heroTitle' => 'Professional Billiard Livestreaming',
@@ -205,14 +227,158 @@ function railshot_build_live_urls(array $liveConfig): array
     ];
 }
 
-function railshot_public_live_config(): array
+function railshot_sanitize_venue_id(string $id): string
+{
+    $id = strtolower(trim($id));
+    $id = preg_replace('/[^a-z0-9_-]+/', '', $id) ?? '';
+    return $id;
+}
+
+function railshot_normalize_venues(array $live): array
+{
+    if (!empty($live['venues']) && is_array($live['venues'])) {
+        $venues = [];
+        foreach ($live['venues'] as $venue) {
+            if (!is_array($venue)) {
+                continue;
+            }
+            $id = railshot_sanitize_venue_id($venue['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $tables = [];
+            foreach ($venue['tables'] ?? [] as $table) {
+                if (!is_array($table) || empty($table['id']) || empty($table['name'])) {
+                    continue;
+                }
+                $tables[] = $table;
+            }
+            $tableIds = array_map(static fn(array $t): string => railshot_sanitize_table_id($t['id'] ?? ''), $tables);
+            $activeTableId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
+            if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
+                $activeTableId = $tableIds[0] ?? '';
+            }
+            $venues[] = array_merge($venue, [
+                'id' => $id,
+                'tables' => $tables,
+                'activeTableId' => $activeTableId,
+            ]);
+        }
+        if ($venues !== []) {
+            return $venues;
+        }
+    }
+
+    $legacyTables = $live['tables'] ?? [];
+    if ($legacyTables === []) {
+        return railshot_default_config()['live']['venues'];
+    }
+
+    return [[
+        'id' => 'main-hall',
+        'name' => 'Main Hall',
+        'location' => 'Your Venue',
+        'description' => 'Watch live billiard tables from our main streaming venue.',
+        'tagline' => 'Live now',
+        'image' => '/images/logo.png',
+        'activeTableId' => $live['activeTableId'] ?? 'table1',
+        'tables' => $legacyTables,
+    ]];
+}
+
+function railshot_find_venue(array $live, string $venueId): ?array
+{
+    $venueId = railshot_sanitize_venue_id($venueId);
+    foreach (railshot_normalize_venues($live) as $venue) {
+        if (($venue['id'] ?? '') === $venueId) {
+            return $venue;
+        }
+    }
+    return null;
+}
+
+function railshot_collect_all_tables(array $live): array
+{
+    $tables = [];
+    $seen = [];
+    foreach (railshot_normalize_venues($live) as $venue) {
+        foreach ($venue['tables'] ?? [] as $table) {
+            $id = railshot_sanitize_table_id($table['id'] ?? '');
+            if ($id === '' || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $tables[] = $table;
+        }
+    }
+    return $tables;
+}
+
+function railshot_public_venues_config(): array
+{
+    $config = railshot_load_config();
+    $live = $config['live'] ?? [];
+    $landing = $live['landing'] ?? railshot_default_config()['live']['landing'];
+
+    $venues = [];
+    foreach (railshot_normalize_venues($live) as $venue) {
+        $tables = [];
+        foreach ($venue['tables'] ?? [] as $table) {
+            if (empty($table['id']) || empty($table['name'])) {
+                continue;
+            }
+            $tables[] = [
+                'id' => $table['id'],
+                'name' => $table['name'],
+            ];
+        }
+        $activeId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
+        $isLive = false;
+        foreach ($tables as $table) {
+            if ($table['id'] === $activeId) {
+                $isLive = true;
+                break;
+            }
+        }
+        $venues[] = [
+            'id' => $venue['id'],
+            'name' => $venue['name'] ?? $venue['id'],
+            'location' => $venue['location'] ?? '',
+            'description' => $venue['description'] ?? '',
+            'tagline' => $venue['tagline'] ?? '',
+            'image' => $venue['image'] ?? '/images/logo.png',
+            'tableCount' => count($tables),
+            'isLive' => $isLive,
+        ];
+    }
+
+    return [
+        'landing' => [
+            'headline' => $landing['headline'] ?? '',
+            'subtitle' => $landing['subtitle'] ?? '',
+            'bullets' => array_values(array_filter($landing['bullets'] ?? [], static fn($b) => trim((string) $b) !== '')),
+        ],
+        'venues' => $venues,
+    ];
+}
+
+function railshot_public_live_config(?string $venueId = null): array
 {
     $config = railshot_load_config();
     $live = $config['live'] ?? [];
     $urls = railshot_build_live_urls($live);
 
+    $venues = railshot_normalize_venues($live);
+    $venue = null;
+    if ($venueId !== null && $venueId !== '') {
+        $venue = railshot_find_venue($live, $venueId);
+    }
+    if ($venue === null) {
+        $venue = $venues[0] ?? null;
+    }
+
     $allTables = [];
-    foreach ($live['tables'] ?? [] as $table) {
+    foreach ($venue['tables'] ?? [] as $table) {
         if (empty($table['id']) || empty($table['name'])) {
             continue;
         }
@@ -223,7 +389,7 @@ function railshot_public_live_config(): array
         ];
     }
 
-    $activeId = railshot_sanitize_table_id($live['activeTableId'] ?? '');
+    $activeId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
     $activeTable = null;
     foreach ($allTables as $table) {
         if ($table['id'] === $activeId) {
@@ -238,6 +404,8 @@ function railshot_public_live_config(): array
     $publicTables = $activeTable !== null ? [$activeTable] : [];
 
     return array_merge($urls, [
+        'venueId' => $venue['id'] ?? '',
+        'venueName' => $venue['name'] ?? '',
         'tables' => $publicTables,
         'viewerLocked' => true,
         'activeTableId' => $activeTable['id'] ?? '',
