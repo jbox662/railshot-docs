@@ -828,7 +828,7 @@ paths:
   # Router rule: external 8554 -> 192.168.68.89:554 (TCP)
   # Replace YOUR_HOME_PUBLIC_IP with hall/home WAN IP
   table1:
-    source: rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main
+    source: rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main
     sourceOnDemand: yes
     sourceOnDemandStartTimeout: 15s
     sourceOnDemandCloseAfter: 15s
