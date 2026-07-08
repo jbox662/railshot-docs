@@ -9,4 +9,4 @@ if errorlevel 1 (
   exit /b 1
 )
 
-ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -stimeout 30000000 -i "rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main" -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:%RTSP_PORT%/%MTX_PATH%
+ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i "rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main" -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:%RTSP_PORT%/%MTX_PATH%
