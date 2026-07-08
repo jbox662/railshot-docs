@@ -15,6 +15,11 @@
     const statusEl = document.getElementById('liveStatus');
     const statusTextEl = document.getElementById('liveStatusText');
     const protocolBadgeEl = document.getElementById('protocolBadge');
+    const videoWrapperEl = document.querySelector('.video-wrapper');
+    const videoFitFillBtn = document.getElementById('videoFitFill');
+    const videoFitFullBtn = document.getElementById('videoFitFull');
+
+    const VIDEO_FIT_KEY = 'railshot_video_fit';
 
     let config = null;
     let currentReader = null;
@@ -42,6 +47,39 @@
 
     function hideOverlay() {
         if (overlayEl) overlayEl.classList.add('hidden');
+    }
+
+    function setVideoFit(mode) {
+        const isFull = mode === 'full';
+        if (videoWrapperEl) {
+            videoWrapperEl.classList.toggle('is-fit-full', isFull);
+        }
+        if (videoFitFillBtn) {
+            videoFitFillBtn.classList.toggle('active', !isFull);
+            videoFitFillBtn.setAttribute('aria-pressed', isFull ? 'false' : 'true');
+        }
+        if (videoFitFullBtn) {
+            videoFitFullBtn.classList.toggle('active', isFull);
+            videoFitFullBtn.setAttribute('aria-pressed', isFull ? 'true' : 'false');
+        }
+        try {
+            localStorage.setItem(VIDEO_FIT_KEY, isFull ? 'full' : 'fill');
+        } catch (err) { /* ignore */ }
+    }
+
+    function initVideoFitControls() {
+        let saved = 'fill';
+        try {
+            saved = localStorage.getItem(VIDEO_FIT_KEY) || 'fill';
+        } catch (err) { /* ignore */ }
+        setVideoFit(saved === 'full' ? 'full' : 'fill');
+
+        if (videoFitFillBtn) {
+            videoFitFillBtn.addEventListener('click', function () { setVideoFit('fill'); });
+        }
+        if (videoFitFullBtn) {
+            videoFitFullBtn.addEventListener('click', function () { setVideoFit('full'); });
+        }
     }
 
     function setProtocolBadge(label) {
@@ -243,6 +281,7 @@
         }
 
         buildTableList();
+        initVideoFitControls();
     }
 
     window.addEventListener('beforeunload', cleanupPlayer);

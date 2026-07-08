@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#00A8E8">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/live.css?v=2">
+    <link rel="stylesheet" href="css/live.css?v=3">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 </head>
@@ -55,6 +55,11 @@
                     <div class="video-meta">
                         <h2 id="currentTableTitle">Select a Table</h2>
                         <p id="currentTableDescription" class="video-meta-desc"></p>
+                        <div class="video-view-controls" role="group" aria-label="Video display mode">
+                            <span class="video-view-label">View</span>
+                            <button type="button" class="video-view-btn active" id="videoFitFill" aria-pressed="true" title="Fill the player edge to edge">Fill</button>
+                            <button type="button" class="video-view-btn" id="videoFitFull" aria-pressed="false" title="Show the entire camera image">Full</button>
+                        </div>
                         <p id="protocolBadge" class="protocol-badge hidden"></p>
                     </div>
                 </section>
@@ -81,7 +86,7 @@
 
     <script src="js/streams-config.js?v=5"></script>
     <script src="js/mediamtx-webrtc-reader.js?v=5"></script>
-    <script src="js/live.js?v=5"></script>
+    <script src="js/live.js?v=6"></script>
     <script>
         lucide.createIcons();
     </script>
