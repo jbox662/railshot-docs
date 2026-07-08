@@ -86,11 +86,20 @@
         const response = await fetch('/admin/api/save.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify(payload)
         });
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.error || 'Save failed');
+
+        const text = await response.text();
+        let result = null;
+        try {
+            result = text ? JSON.parse(text) : null;
+        } catch (err) {
+            throw new Error('Server returned an invalid response. Check that admin/api/save.php is uploaded and PHP is enabled.');
+        }
+
+        if (!response.ok || !result || !result.ok) {
+            throw new Error((result && result.error) || 'Save failed (HTTP ' + response.status + ')');
         }
         return result;
     }

@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__DIR__) . '/api/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/api/bootstrap.php';
 
 if (!railshot_admin_exists()) {
     railshot_json_response(['error' => 'Admin not configured'], 503);

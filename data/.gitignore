@@ -1,0 +1,2 @@
+# Writable config fallback if App_Data is locked on Plesk
+railshot-config.json

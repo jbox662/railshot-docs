@@ -46,20 +46,34 @@ function railshot_default_config(): array
     ];
 }
 
+function railshot_config_file_path(): string
+{
+    railshot_ensure_data_dir();
+    if (file_exists(RAILSHOT_CONFIG_FILE)) {
+        return RAILSHOT_CONFIG_FILE;
+    }
+    $fallback = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'railshot-config.json';
+    if (file_exists($fallback)) {
+        return $fallback;
+    }
+    return RAILSHOT_CONFIG_FILE;
+}
+
 function railshot_load_config(): array
 {
     railshot_ensure_data_dir();
+    $configFile = railshot_config_file_path();
 
-    if (!file_exists(RAILSHOT_CONFIG_FILE)) {
+    if (!file_exists($configFile)) {
         $defaults = railshot_default_config();
         file_put_contents(
-            RAILSHOT_CONFIG_FILE,
+            $configFile,
             json_encode($defaults, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
         );
         return $defaults;
     }
 
-    $raw = file_get_contents(RAILSHOT_CONFIG_FILE);
+    $raw = file_get_contents($configFile);
     $data = json_decode($raw ?: '', true);
 
     if (!is_array($data)) {
@@ -76,7 +90,16 @@ function railshot_save_config(array $config): bool
     if ($json === false) {
         return false;
     }
-    return file_put_contents(RAILSHOT_CONFIG_FILE, $json) !== false;
+    $written = @file_put_contents(RAILSHOT_CONFIG_FILE, $json, LOCK_EX);
+    if ($written !== false) {
+        return true;
+    }
+    $fallback = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'railshot-config.json';
+    $fallbackDir = dirname($fallback);
+    if (!is_dir($fallbackDir)) {
+        mkdir($fallbackDir, 0755, true);
+    }
+    return file_put_contents($fallback, $json, LOCK_EX) !== false;
 }
 
 function railshot_admin_exists(): bool
