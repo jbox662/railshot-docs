@@ -10,12 +10,14 @@ $path = str_replace('\\', '/', $path);
 $path = ltrim($path, '/');
 
 if ($path === '' || strpos($path, '..') !== false) {
-    http_response_code(400);
-    header('Content-Type: text/plain; charset=UTF-8');
-    exit('Invalid path');
+    railshot_hls_error(400, 'Invalid path');
 }
 
 $upstream = 'http://127.0.0.1:8888/' . $path;
+
+if (!function_exists('curl_init')) {
+    railshot_hls_error(500, 'PHP curl extension is not enabled on this server.');
+}
 
 $ch = curl_init($upstream);
 curl_setopt_array($ch, [
@@ -27,13 +29,23 @@ curl_setopt_array($ch, [
 
 $body = curl_exec($ch);
 $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
 curl_close($ch);
 
-if ($body === false || $status < 200 || $status >= 400) {
-    http_response_code($status > 0 ? $status : 502);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'MediaMTX HLS unavailable. Is mediamtx.exe running on this VPS?';
-    exit;
+if ($body === false) {
+    railshot_hls_error(502, 'Cannot reach MediaMTX on 127.0.0.1:8888. ' . $curlError);
+}
+
+if ($status === 404) {
+    railshot_hls_error(404, 'Stream path not found in MediaMTX. Add path "' . dirname($path) . '" to C:\\mediamtx\\mediamtx.yml on the VPS and restart mediamtx.exe.');
+}
+
+if ($status === 500 || $status === 502) {
+    railshot_hls_error($status, 'MediaMTX could not pull the camera. Check RTSP URL/password in mediamtx.yml and your home port forward (8554 -> camera).');
+}
+
+if ($status < 200 || $status >= 400) {
+    railshot_hls_error($status > 0 ? $status : 502, 'MediaMTX returned HTTP ' . $status);
 }
 
 if (preg_match('/\.m3u8$/i', $path)) {
@@ -44,8 +56,17 @@ if (preg_match('/\.m3u8$/i', $path)) {
 }
 
 header('Cache-Control: no-cache');
-http_response_code($status);
+http_response_code(200);
 echo $body;
+exit;
+
+function railshot_hls_error(int $code, string $message): void
+{
+    http_response_code($code);
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo $message;
+    exit;
+}
 
 function railshot_rewrite_hls_playlist(string $playlist, string $playlistPath): string
 {
