@@ -20,7 +20,7 @@ sysLogPrefix: mediamtx
 dumpPackets: false
 
 # Timeout of read operations.
-readTimeout: 10s
+readTimeout: 30s
 # Timeout of write operations.
 writeTimeout: 10s
 # Size of the queue of outgoing packets.
@@ -828,11 +828,12 @@ paths:
   # Router rule: external 8554 -> 192.168.68.89:554 (TCP)
   # Replace YOUR_HOME_PUBLIC_IP with hall/home WAN IP
   table1:
-    source: rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main
-    sourceOnDemand: yes
-    sourceOnDemandStartTimeout: 30s
-    sourceOnDemandCloseAfter: 15s
-    rtspTransport: tcp
+    # ffmpeg pull — same stack VLC uses; native RTSP pull can timeout via port forward.
+    # Requires ffmpeg in PATH on the VPS (winget install ffmpeg).
+    runOnDemand: ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -stimeout 30000000 -i rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_sub -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+    runOnDemandRestart: yes
+    runOnDemandStartTimeout: 60s
+    runOnDemandCloseAfter: 30s
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.
