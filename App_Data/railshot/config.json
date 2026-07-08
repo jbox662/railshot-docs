@@ -8,7 +8,7 @@
                 "id": "table1",
                 "name": "Test Camera",
                 "description": "192.168.68.89",
-                "rtspUrl": "rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main"
+                "rtspUrl": "rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main"
             }
         ]
     },
