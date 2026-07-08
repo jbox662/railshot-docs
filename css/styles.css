@@ -909,3 +909,166 @@ body::after {
         height: 20px;
     }
 }
+
+/* ============================================================
+   MOBILE HAMBURGER MENU
+   ============================================================ */
+
+/* Hide hamburger on desktop */
+.nav-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    z-index: 1100;
+    transition: background 0.2s ease;
+    padding: 0;
+}
+
+.nav-hamburger:hover {
+    background: rgba(0, 168, 232, 0.2);
+}
+
+.nav-hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Animated X when open */
+.nav-hamburger.open span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+.nav-hamburger.open span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+.nav-hamburger.open span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile overlay — hidden by default */
+.nav-mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 14, 26, 0.97);
+    backdrop-filter: blur(24px);
+    z-index: 1050;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.nav-mobile-overlay.open {
+    opacity: 1;
+}
+
+.nav-mobile-link {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.nav-mobile-link:hover {
+    color: var(--primary);
+    background: rgba(0, 168, 232, 0.1);
+}
+
+/* Show hamburger and hide desktop nav on mobile */
+@media (max-width: 768px) {
+    .nav {
+        display: none;
+    }
+
+    .nav-hamburger {
+        display: flex;
+    }
+
+    .nav-mobile-overlay {
+        display: flex;
+    }
+}
+
+/* ============================================================
+   SKELETON LOADERS (Live venue grid)
+   ============================================================ */
+
+@keyframes skeleton-shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position: 600px 0; }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(42, 49, 66, 0.8) 25%,
+        rgba(60, 70, 90, 0.9) 50%,
+        rgba(42, 49, 66, 0.8) 75%
+    );
+    background-size: 600px 100%;
+    animation: skeleton-shimmer 1.4s infinite linear;
+    border-radius: var(--radius-sm);
+}
+
+.venue-card-skeleton {
+    background: rgba(26, 31, 46, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.venue-card-skeleton .sk-image {
+    width: 100%;
+    height: 160px;
+}
+
+.venue-card-skeleton .sk-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.venue-card-skeleton .sk-title {
+    height: 18px;
+    width: 60%;
+}
+
+.venue-card-skeleton .sk-sub {
+    height: 13px;
+    width: 40%;
+}
+
+.venue-card-skeleton .sk-desc {
+    height: 13px;
+    width: 85%;
+}
+
+.venue-card-skeleton .sk-link {
+    height: 13px;
+    width: 50%;
+    margin-top: 0.4rem;
+}

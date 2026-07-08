@@ -242,3 +242,35 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
 }
+
+/* Venue image upload row */
+.admin-image-upload-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-image-upload-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-upload-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.admin-image-preview-wrap {
+    margin-top: 0.6rem;
+}
+
+.admin-image-preview {
+    max-width: 220px;
+    max-height: 120px;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 168, 232, 0.3);
+    object-fit: cover;
+    display: block;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}

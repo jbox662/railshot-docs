@@ -157,4 +157,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     console.log('RailShot TV website loaded successfully');
+
+    // ── Mobile hamburger menu ──────────────────────────────────────
+    const hamburger = document.getElementById('navHamburger');
+    const mobileOverlay = document.getElementById('navMobileOverlay');
+
+    function openMobileMenu() {
+        if (!hamburger || !mobileOverlay) return;
+        hamburger.classList.add('open');
+        hamburger.setAttribute('aria-expanded', 'true');
+        mobileOverlay.classList.add('open');
+        mobileOverlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileMenu() {
+        if (!hamburger || !mobileOverlay) return;
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        mobileOverlay.classList.remove('open');
+        mobileOverlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    if (hamburger) {
+        hamburger.addEventListener('click', function () {
+            if (hamburger.classList.contains('open')) {
+                closeMobileMenu();
+            } else {
+                openMobileMenu();
+            }
+        });
+    }
+
+    // Close menu when any mobile nav link is tapped
+    if (mobileOverlay) {
+        mobileOverlay.querySelectorAll('.nav-mobile-link').forEach(function (link) {
+            link.addEventListener('click', closeMobileMenu);
+        });
+    }
+
+    // Close menu on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeMobileMenu();
+    });
 });

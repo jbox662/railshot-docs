@@ -65,7 +65,16 @@
                         '<label>Location <input data-venue-field="location" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.location || '') + '"></label>' +
                         '<label>Tagline <input data-venue-field="tagline" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.tagline || '') + '" placeholder="Live now"></label>' +
                         '<label class="full-width">Description <textarea data-venue-field="description" data-venue="' + venueIndex + '" rows="2">' + escapeHtml(venue.description || '') + '</textarea></label>' +
-                        '<label class="full-width">Card image URL <input data-venue-field="image" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.image || '/images/logo.png') + '"></label>' +
+                        '<label class="full-width">Venue Card Image' +
+                            '<div class="admin-image-upload-row">' +
+                                '<input data-venue-field="image" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.image || '/images/logo.png') + '" placeholder="/images/logo.png">' +
+                                '<button type="button" class="btn btn-secondary btn-small admin-upload-btn" data-upload-venue="' + venueIndex + '">Upload Image</button>' +
+                                '<input type="file" class="admin-upload-file-input" data-upload-file-venue="' + venueIndex + '" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">' +
+                            '</div>' +
+                            '<div class="admin-image-preview-wrap" data-preview-venue="' + venueIndex + '">' +
+                                (venue.image && venue.image !== '/images/logo.png' ? '<img class="admin-image-preview" src="' + escapeHtml(venue.image) + '" alt="Venue preview">' : '') +
+                            '</div>' +
+                        '</label>' +
                         '<label class="full-width">On-air camera (viewers see this) ' +
                             '<select data-venue-field="activeTableId" data-venue="' + venueIndex + '">' + tableOptionsHtml(tables, activeTableId) + '</select>' +
                         '</label>' +
@@ -107,6 +116,65 @@
                     rtspUrl: ''
                 });
                 renderVenues();
+            });
+        });
+
+        // Upload button click → trigger hidden file input
+        venuesContainer.querySelectorAll('.admin-upload-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var vi = Number(btn.getAttribute('data-upload-venue'));
+                var fileInput = venuesContainer.querySelector('[data-upload-file-venue="' + vi + '"]');
+                if (fileInput) fileInput.click();
+            });
+        });
+
+        // File selected → upload to server
+        venuesContainer.querySelectorAll('.admin-upload-file-input').forEach(function (fileInput) {
+            fileInput.addEventListener('change', async function () {
+                var vi = Number(fileInput.getAttribute('data-upload-file-venue'));
+                var file = fileInput.files[0];
+                if (!file) return;
+
+                var uploadBtn = venuesContainer.querySelector('[data-upload-venue="' + vi + '"]');
+                if (uploadBtn) {
+                    uploadBtn.disabled = true;
+                    uploadBtn.textContent = 'Uploading…';
+                }
+
+                try {
+                    var formData = new FormData();
+                    formData.append('image', file);
+                    var response = await fetch('/admin/api/upload-image.php', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        body: formData
+                    });
+                    var result = await response.json();
+                    if (!response.ok || !result.ok) {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+
+                    // Update the URL input and in-memory venues array
+                    var urlInput = venuesContainer.querySelector('[data-venue-field="image"][data-venue="' + vi + '"]');
+                    if (urlInput) urlInput.value = result.url;
+                    venues[vi].image = result.url;
+
+                    // Update the preview image
+                    var previewWrap = venuesContainer.querySelector('[data-preview-venue="' + vi + '"]');
+                    if (previewWrap) {
+                        previewWrap.innerHTML = '<img class="admin-image-preview" src="' + result.url + '" alt="Venue preview">';
+                    }
+
+                    showMessage('Image uploaded successfully. Click "Save live settings" to apply.');
+                } catch (err) {
+                    showMessage('Image upload failed: ' + err.message, true);
+                } finally {
+                    if (uploadBtn) {
+                        uploadBtn.disabled = false;
+                        uploadBtn.textContent = 'Upload Image';
+                    }
+                    fileInput.value = '';
+                }
             });
         });
 

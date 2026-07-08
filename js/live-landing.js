@@ -57,7 +57,28 @@
         }).join('');
     }
 
+    function showSkeletons(count) {
+        if (!gridEl) return;
+        var html = '';
+        for (var i = 0; i < count; i++) {
+            html +=
+                '<div class="venue-card-skeleton" aria-hidden="true">' +
+                    '<div class="sk-image skeleton"></div>' +
+                    '<div class="sk-body">' +
+                        '<div class="sk-title skeleton"></div>' +
+                        '<div class="sk-sub skeleton"></div>' +
+                        '<div class="sk-desc skeleton"></div>' +
+                        '<div class="sk-link skeleton"></div>' +
+                    '</div>' +
+                '</div>';
+        }
+        gridEl.innerHTML = html;
+    }
+
     async function init() {
+        // Show 3 skeleton cards while loading
+        showSkeletons(3);
+
         try {
             const response = await fetch('/api/venues-config.php', { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to load venues');
@@ -66,6 +87,7 @@
             renderVenues(data.venues || []);
         } catch (err) {
             console.warn('Venues config unavailable:', err);
+            if (gridEl) gridEl.innerHTML = '';
             if (subtitleEl) {
                 subtitleEl.textContent = 'Choose a venue below to watch live billiard tables in your browser.';
             }

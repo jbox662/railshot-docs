@@ -212,6 +212,27 @@
     to { transform: rotate(360deg); }
 }
 
+/* Retry button shown when stream is offline */
+.overlay-retry-btn {
+    margin-top: 0.5rem;
+    padding: 0.6rem 1.6rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 4px 16px rgba(0, 168, 232, 0.35);
+}
+
+.overlay-retry-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
 .video-meta {
     padding: var(--spacing-md) var(--spacing-lg);
     display: flex;
@@ -441,7 +462,15 @@
 .venue-card-image-wrap {
     position: relative;
     aspect-ratio: 16 / 10;
-    background: #000;
+    background:
+        linear-gradient(135deg, rgba(10, 14, 26, 0.9) 0%, rgba(26, 31, 46, 0.95) 100%),
+        repeating-linear-gradient(
+            45deg,
+            rgba(0, 168, 232, 0.04) 0px,
+            rgba(0, 168, 232, 0.04) 1px,
+            transparent 1px,
+            transparent 12px
+        );
     overflow: hidden;
 }
 

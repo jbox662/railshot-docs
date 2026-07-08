@@ -23,12 +23,15 @@
 
     const VIDEO_FIT_KEY = 'railshot_video_fit';
     const CONFIG_POLL_MS = 20000;
+    const STREAM_TIMEOUT_MS = 12000; // Show offline message after 12 seconds
 
     let config = null;
     let currentTableId = null;
     let currentReader = null;
     let currentHls = null;
     let usingFallback = false;
+    let streamTimeoutId = null;
+    let currentTable = null;
 
     function stripTrailingSlash(url) {
         return String(url || '').replace(/\/+$/, '');
@@ -42,11 +45,27 @@
         if (statusTextEl) statusTextEl.textContent = text;
     }
 
-    function showOverlay(message, idle) {
+    function showOverlay(message, idle, showRetry) {
         if (!overlayEl) return;
         overlayEl.classList.remove('hidden');
         if (overlayMsgEl) overlayMsgEl.textContent = message;
         if (spinnerEl) spinnerEl.classList.toggle('is-idle', !!idle);
+
+        // Remove any existing retry button first
+        var existingRetry = overlayEl.querySelector('.overlay-retry-btn');
+        if (existingRetry) existingRetry.remove();
+
+        if (showRetry && currentTable) {
+            var retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.className = 'overlay-retry-btn';
+            retryBtn.textContent = 'Retry';
+            retryBtn.addEventListener('click', function () {
+                clearStreamTimeout();
+                loadTable(currentTable);
+            });
+            overlayEl.appendChild(retryBtn);
+        }
     }
 
     function hideOverlay() {
@@ -107,6 +126,25 @@
         protocolBadgeEl.classList.remove('hidden');
     }
 
+    function clearStreamTimeout() {
+        if (streamTimeoutId) {
+            clearTimeout(streamTimeoutId);
+            streamTimeoutId = null;
+        }
+    }
+
+    function startStreamTimeout(table) {
+        clearStreamTimeout();
+        streamTimeoutId = setTimeout(function () {
+            // Only fire if we are still in a connecting state
+            if (statusEl && statusEl.classList.contains('is-connecting')) {
+                setStatus('error', 'Stream offline');
+                showOverlay('The stream is currently offline. Please check back later.', true, true);
+                setProtocolBadge('');
+            }
+        }, STREAM_TIMEOUT_MS);
+    }
+
     function cleanupPlayer() {
         if (currentReader) {
             try { currentReader.close(); } catch (err) { console.warn('WebRTC close error:', err); }
@@ -137,20 +175,23 @@
         setProtocolBadge('HLS');
         setStatus('connecting', 'Connecting to ' + table.name + '…');
         showOverlay('Connecting to ' + table.name + '…');
+        startStreamTimeout(table);
 
         if (window.Hls && Hls.isSupported()) {
             currentHls = new Hls({ enableWorker: true, lowLatencyMode: true });
             currentHls.loadSource(hlsUrl);
             currentHls.attachMedia(videoEl);
             currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
+                clearStreamTimeout();
                 videoEl.play().catch(function () {});
                 hideOverlay();
                 setStatus('live', 'Live · ' + table.name);
             });
             currentHls.on(Hls.Events.ERROR, function (_event, data) {
                 if (data.fatal) {
-                    setStatus('error', 'Stream unavailable');
-                    showOverlay('Unable to load stream. Check MediaMTX / camera path.', true);
+                    clearStreamTimeout();
+                    setStatus('error', 'Stream offline');
+                    showOverlay('The stream is currently offline. Please check back later.', true, true);
                     setProtocolBadge('');
                 }
             });
@@ -161,6 +202,7 @@
             videoEl.src = hlsUrl;
             videoEl.addEventListener('loadedmetadata', function onMeta() {
                 videoEl.removeEventListener('loadedmetadata', onMeta);
+                clearStreamTimeout();
                 videoEl.play().catch(function () {});
                 hideOverlay();
                 setStatus('live', 'Live · ' + table.name);
@@ -168,6 +210,7 @@
             return;
         }
 
+        clearStreamTimeout();
         setStatus('error', 'Playback not supported');
         showOverlay('This browser cannot play the live stream.', true);
     }
@@ -187,18 +230,21 @@
         setProtocolBadge('WebRTC');
         setStatus('connecting', 'Connecting to ' + table.name + '…');
         showOverlay('Connecting to ' + table.name + '…');
+        startStreamTimeout(table);
 
         currentReader = new MediaMTXWebRTCReader({
             url: whepUrl,
             onError: function (err) {
                 console.warn('WebRTC error, falling back to HLS:', err);
                 if (!usingFallback) {
+                    clearStreamTimeout();
                     cleanupPlayer();
                     loadStreamHls(table);
                 }
             },
             onTrack: function (evt) {
                 if (evt.streams && evt.streams[0]) {
+                    clearStreamTimeout();
                     videoEl.srcObject = evt.streams[0];
                     videoEl.play().catch(function () {});
                     hideOverlay();
@@ -212,6 +258,7 @@
     function loadTable(table) {
         if (!table) return;
 
+        currentTable = table;
         currentTableId = table.id;
         titleEl.textContent = table.name;
         descEl.textContent = table.description || '';

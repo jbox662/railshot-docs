@@ -19,12 +19,21 @@
                     <img src="images/logo.png" alt="RailShot TV Logo" class="logo-icon">
                     <span>RailShot TV</span>
                 </a>
-                <nav class="nav">
+                <nav class="nav" id="mainNav">
                     <a href="live.html" class="nav-link active">Live</a>
                     <a href="index.html#features" class="nav-link">Features</a>
                     <a href="index.html#contact" class="nav-link">Contact</a>
                     <a href="index.html#download" class="nav-link">Download</a>
                 </nav>
+                <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-mobile-overlay" id="navMobileOverlay" aria-hidden="true">
+                    <a href="live.html" class="nav-mobile-link">Live</a>
+                    <a href="index.html#features" class="nav-mobile-link">Features</a>
+                    <a href="index.html#contact" class="nav-mobile-link">Contact</a>
+                    <a href="index.html#download" class="nav-mobile-link">Download</a>
+                </div>
             </div>
         </div>
     </header>
@@ -60,6 +69,7 @@
     </footer>
 
     <script src="js/live-landing.js?v=1"></script>
+    <script src="js/nav.js?v=1"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>
