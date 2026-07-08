@@ -77,7 +77,9 @@
 
     function loadStreamHls(table) {
         const base = stripTrailingSlash(config.hlsBaseUrl);
-        const hlsUrl = base + '/' + table.id + '/index.m3u8';
+        const hlsUrl = base.indexOf('?path=') !== -1
+            ? base + table.id + '/index.m3u8'
+            : base + '/' + table.id + '/index.m3u8';
 
         usingFallback = true;
         setProtocolBadge('HLS');
@@ -125,7 +127,9 @@
         }
 
         const base = stripTrailingSlash(config.webrtcBaseUrl);
-        const whepUrl = base + '/' + table.id + '/whep';
+        const whepUrl = base.indexOf('?path=') !== -1
+            ? base + table.id + '/whep'
+            : base + '/' + table.id + '/whep';
 
         usingFallback = false;
         setProtocolBadge('WebRTC');

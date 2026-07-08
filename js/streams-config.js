@@ -18,10 +18,8 @@
         hlsBaseUrl = 'http://127.0.0.1:8888';
         preferredProtocol = 'webrtc';
     } else if (loc.protocol === 'https:') {
-        // Production HTTPS — use same-origin IIS proxy (see web.config)
-        // Avoids mixed-content blocking http://IP:8888 from https://railshottv.com
-        webrtcBaseUrl = loc.origin + '/live-webrtc';
-        hlsBaseUrl = loc.origin + '/live-hls';
+        webrtcBaseUrl = loc.origin + '/api/webrtc.php?path=';
+        hlsBaseUrl = loc.origin + '/api/hls.php?path=';
         preferredProtocol = 'hls';
     } else {
         // HTTP site — direct to VPS MediaMTX

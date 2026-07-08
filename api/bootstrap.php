@@ -191,8 +191,8 @@ function railshot_build_live_urls(array $liveConfig): array
     if ($useProxy && $isHttps && !empty($_SERVER['HTTP_HOST'])) {
         $origin = 'https://' . $_SERVER['HTTP_HOST'];
         return [
-            'webrtcBaseUrl' => $origin . '/live-webrtc',
-            'hlsBaseUrl' => $origin . '/live-hls',
+            'webrtcBaseUrl' => $origin . '/api/webrtc.php?path=',
+            'hlsBaseUrl' => $origin . '/api/hls.php?path=',
             'preferredProtocol' => $liveConfig['preferredProtocol'] ?? 'hls',
         ];
     }
