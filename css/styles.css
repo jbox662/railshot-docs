@@ -59,7 +59,7 @@ body::before {
     bottom: 0;
     background: 
         linear-gradient(180deg, rgba(10, 14, 26, 0.85) 0%, rgba(10, 14, 26, 0.75) 50%, rgba(10, 14, 26, 0.85) 100%),
-        url('/images/bg-pool-hall-1.jpg');
+        url('../images/bg-pool-hall-1.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -153,7 +153,7 @@ body::after {
     padding: var(--spacing-3xl) 0;
     background: 
         linear-gradient(135deg, rgba(10, 14, 26, 0.92) 0%, rgba(26, 31, 46, 0.88) 100%),
-        url('/images/bg-pool-ball.jpg');
+        url('../images/bg-pool-ball.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -320,7 +320,7 @@ body::after {
     padding: var(--spacing-3xl) 0;
     background: 
         linear-gradient(180deg, rgba(10, 14, 26, 0.90) 0%, rgba(26, 31, 46, 0.92) 100%),
-        url('/images/bg-pool-hall-2.jpg');
+        url('../images/bg-pool-hall-2.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -484,7 +484,7 @@ body::after {
     padding: var(--spacing-3xl) 0;
     background: 
         linear-gradient(135deg, rgba(10, 14, 26, 0.95) 0%, rgba(26, 31, 46, 0.95) 100%),
-        url('/images/bg-pool-hall-1.jpg');
+        url('../images/bg-pool-hall-1.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

@@ -1,17 +1,19 @@
-# MediaMTX for RailShot TV live tables
-# Place this folder on the server that can reach your Reolink NVR.
+# MediaMTX TEST — camera at 192.168.68.89
 #
-# 1. Set MTX_WEBRTCADDITIONALHOSTS to your public IP or hostname
-# 2. Edit mediamtx.yml — credentials, NVR IP, and paths (match js/streams-config.js ids)
-# 3. Run: docker compose up -d
-
+# This Docker file is for Linux. On Windows Plesk VPS prefer the .exe instead.
+# For a quick LAN test on your own PC (same network as the camera):
+#   1. Download MediaMTX Windows release
+#   2. Copy mediamtx.yml next to mediamtx.exe
+#   3. Put your real camera password in mediamtx.yml
+#   4. Run: mediamtx.exe
+#
+# Docker (Linux only — host networking):
 services:
   mediamtx:
     image: bluenviron/mediamtx:latest
     network_mode: host
     environment:
-      # Replace with your VPS public IP or hostname (needed for WebRTC)
-      - MTX_WEBRTCADDITIONALHOSTS=YOUR_SERVER_PUBLIC_IP
+      - MTX_WEBRTCADDITIONALHOSTS=127.0.0.1
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
     restart: unless-stopped

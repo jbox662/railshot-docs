@@ -1,32 +1,19 @@
-# MediaMTX config for RailShot TV
-# Path names under `paths:` must match the `id` fields in js/streams-config.js
-# Add or remove path blocks freely — there is no fixed table limit.
+# MediaMTX — sync note
+# The runnable Windows install is:
+#   ../mediamtx_v1.19.2_windows_amd64/mediamtx.exe + mediamtx.yml
+# Use start-mediamtx.bat there for local tests.
+# Use VPS_MEDIAMTX_SETUP.md for Windows Plesk VPS deployment.
 
 logLevel: info
-
 webrtc: yes
 hls: yes
 rtmp: no
 srt: no
-
-# Optional: restrict publish/read later with auth
-# authInternalUsers: ...
+webrtcAdditionalHosts: [127.0.0.1, 192.168.68.91, 160.153.184.255]
 
 paths:
-  # On-demand pull from Reolink NVR — only connects when someone is watching
   table1:
-    source: rtsp://admin:password@192.168.1.50:554/h264Preview_01_main
+    # Home router forwards external 8554 -> 192.168.68.89:554
+    # Replace YOUR_HOME_PUBLIC_IP with your hall/home WAN IP (whatismyip.com on camera Wi-Fi)
+    source: rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main
     sourceOnDemand: yes
-
-  table2:
-    source: rtsp://admin:password@192.168.1.50:554/h264Preview_02_main
-    sourceOnDemand: yes
-
-  table3:
-    source: rtsp://admin:password@192.168.1.50:554/h264Preview_03_main
-    sourceOnDemand: yes
-
-  # Example — uncomment / copy for more tables:
-  # table4:
-  #   source: rtsp://admin:password@192.168.1.50:554/h264Preview_04_main
-  #   sourceOnDemand: yes
