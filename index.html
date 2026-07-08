@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RailShot TV - Professional Billiard Livestreaming for iOS</title>
+    <meta name="description" content="Professional billiard livestreaming app for iOS. Stream your matches to YouTube and Facebook with HD/4K quality, remote scoreboard, and instant game setup.">
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00A8E8">
+    
+    <!-- iOS Specific PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RailShot TV">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="#home" class="logo">
+                    <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                    <span>RailShot TV</span>
+                </a>
+                <nav class="nav">
+                    <a href="/live.html" class="nav-link">Live</a>
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                    <a href="#download" class="nav-link">Download</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-grid">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <i data-lucide="smartphone"></i>
+                        <span>iOS 18+ Exclusive</span>
+                    </div>
+                    <h1 class="hero-title">Professional Billiard Livestreaming</h1>
+                    <p class="hero-subtitle">Stream your billiard matches to YouTube and Facebook with professional HD/4K quality. Go live in seconds with instant game setup and remote scoreboard control. Requires iOS 18 or higher.</p>
+                    
+                    <div class="hero-cta">
+                        <a href="https://apps.apple.com" target="_blank" class="btn btn-primary">
+                            <i data-lucide="download" class="btn-icon"></i>
+                            Download on App Store
+                        </a>
+                    </div>
+                    
+                    <div class="hero-features">
+                        <div class="hero-feature-item">
+                            <i data-lucide="check-circle"></i>
+                            <span>HD/4K Streaming</span>
+                        </div>
+                        <div class="hero-feature-item">
+                            <i data-lucide="check-circle"></i>
+                            <span>YouTube & Facebook</span>
+                        </div>
+                        <div class="hero-feature-item">
+                            <i data-lucide="check-circle"></i>
+                            <span>Remote Scoreboard</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-image">
+                    <img src="/images/hero-main-menu.png" alt="RailShot TV App Interface" class="app-screenshot">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge">Features</div>
+                <h2 class="section-title">Everything You Need to Stream Billiards</h2>
+                <p class="section-description">Professional streaming tools designed specifically for billiard players</p>
+            </div>
+            
+            <!-- Feature 1: Quick Match Setup -->
+            <div class="feature-row">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3 class="feature-title">Quick Match Setup</h3>
+                    <p class="feature-description">Configure your billiard match in seconds. Set match name, game type (8-Ball, 9-Ball, etc.), player names, and start streaming instantly. No complex configuration required.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Instant game configuration</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Multiple game types supported</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Player name customization</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-game-setup.png" alt="Quick Match Setup" class="screenshot">
+                </div>
+            </div>
+
+            <!-- Feature 2: Landscape Streaming Mode -->
+            <div class="feature-row feature-row-reverse">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="monitor"></i>
+                    </div>
+                    <h3 class="feature-title">Perfect Table View</h3>
+                    <p class="feature-description">Landscape streaming mode locked for the perfect billiard table view. HD/4K quality captures every shot with professional clarity. Built-in scoreboard overlay keeps viewers engaged.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Landscape orientation locked</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>HD/4K streaming quality</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Live scoreboard overlay</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-landscape-mode.png" alt="Landscape Streaming Mode" class="screenshot screenshot-landscape">
+                </div>
+            </div>
+
+            <!-- Feature 3: Remote Scoreboard -->
+            <div class="feature-row">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="smartphone"></i>
+                    </div>
+                    <h3 class="feature-title">Remote Scoreboard Control</h3>
+                    <p class="feature-description">Control the scoreboard from any device using QR code or URL. Perfect for having a dedicated scorekeeper or controlling from multiple angles during your stream.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>QR code instant connection</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>URL sharing for remote access</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Multi-device support</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-remote-scoreboard.png" alt="Remote Scoreboard" class="screenshot screenshot-landscape">
+                </div>
+            </div>
+
+            <!-- Feature 4: Multi-Platform Streaming -->
+            <div class="feature-row feature-row-reverse">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="share-2"></i>
+                    </div>
+                    <h3 class="feature-title">Stream to YouTube & Facebook</h3>
+                    <p class="feature-description">Connect your YouTube and Facebook accounts directly in the app. Stream to your favorite platforms with just one tap. Manage stream settings, privacy, and titles all from your iPhone.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>YouTube Live integration</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Facebook Live support</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Easy account management</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-multiplatform.png" alt="Multi-Platform Streaming" class="screenshot">
+                </div>
+            </div>
+
+            <!-- Feature 5: Local Recording -->
+            <div class="feature-row">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="save"></i>
+                    </div>
+                    <h3 class="feature-title">Save Your Best Games</h3>
+                    <p class="feature-description">Record your matches locally on your device. Review your games, create highlight reels, and improve your skills by analyzing your gameplay. All recordings saved in high quality.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Local recording storage</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Playback and review</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>High-quality video files</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-recordings.png" alt="Local Recording" class="screenshot">
+                </div>
+            </div>
+
+            <!-- Feature 6: Advanced Settings -->
+            <div class="feature-row feature-row-reverse">
+                <div class="feature-content">
+                    <div class="feature-icon-badge">
+                        <i data-lucide="settings"></i>
+                    </div>
+                    <h3 class="feature-title">Full Streaming Control</h3>
+                    <p class="feature-description">Professional encoder settings, AirPlay/HDMI output support, and complete control over your streaming experience. Customize every aspect to match your setup and preferences.</p>
+                    <ul class="feature-list">
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Advanced encoder settings</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>AirPlay/HDMI output</span>
+                        </li>
+                        <li>
+                            <i data-lucide="check"></i>
+                            <span>Customizable preferences</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/feature-settings.png" alt="Advanced Settings" class="screenshot">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge">Get In Touch</div>
+                <h2 class="section-title">Contact Us</h2>
+                <p class="section-description">Have questions or need support? We're here to help</p>
+            </div>
+            
+            <div class="contact-grid">
+                <!-- Contact Information -->
+                <div class="contact-info">
+                    <h3 class="contact-info-title">Let's Talk About Your Streaming</h3>
+                    <p class="contact-info-description">Whether you have questions about features, need technical support, or want to explore partnership opportunities, we're happy to hear from you.</p>
+                    
+                    <div class="contact-details">
+                        <div class="contact-detail-item">
+                            <div class="contact-icon">
+                                <i data-lucide="mail"></i>
+                            </div>
+                            <div class="contact-detail-content">
+                                <h4>Email</h4>
+                                <a href="mailto:support@railshottv.com">support@railshottv.com</a>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-detail-item">
+                            <div class="contact-icon">
+                                <i data-lucide="clock"></i>
+                            </div>
+                            <div class="contact-detail-content">
+                                <h4>Response Time</h4>
+                                <p>We typically respond within 24 hours</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-detail-item">
+                            <div class="contact-icon">
+                                <i data-lucide="smartphone"></i>
+                            </div>
+                            <div class="contact-detail-content">
+                                <h4>Requirements</h4>
+                                <p>iOS 18 or higher required</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Form -->
+                <div class="contact-form-wrapper">
+                    <h3 class="contact-form-title">Send Us a Message</h3>
+                    <form id="contactForm" class="contact-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name" class="form-label">Full Name *</label>
+                                <input type="text" id="name" name="name" class="form-input" placeholder="John Smith" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" class="form-input" placeholder="(555) 123-4567">
+                            </div>
+                            <div class="form-group">
+                                <label for="subject" class="form-label">Subject *</label>
+                                <select id="subject" name="subject" class="form-select" required>
+                                    <option value="">Select a subject...</option>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="partnership">Partnership Opportunity</option>
+                                    <option value="press">Press & Media</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message" class="form-label">Message *</label>
+                            <textarea id="message" name="message" class="form-textarea" rows="6" placeholder="Tell us how we can help you..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-large btn-full">
+                            <span>Send Message</span>
+                            <i data-lucide="send" class="btn-icon"></i>
+                        </button>
+                        
+                        <div id="formMessage" class="form-message"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download-section">
+        <div class="container">
+            <div class="download-content">
+                <div class="download-icon">
+                    <i data-lucide="smartphone"></i>
+                </div>
+                <h2 class="download-title">Ready to Start Streaming?</h2>
+                <p class="download-description">Download RailShot TV on the App Store and start broadcasting your billiard matches in professional quality.</p>
+                <a href="https://apps.apple.com" target="_blank" class="btn btn-primary btn-large">
+                    <i data-lucide="download" class="btn-icon"></i>
+                    Download on App Store
+                </a>
+                <p class="download-note">Requires iOS 18 or higher</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                        <span>RailShot TV</span>
+                    </div>
+                    <p class="footer-tagline">Professional Billiard Livestreaming for iOS</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Product</h4>
+                        <a href="/live.html" class="footer-link">Live Tables</a>
+                        <a href="#features" class="footer-link">Features</a>
+                        <a href="#contact" class="footer-link">Contact</a>
+                        <a href="#download" class="footer-link">Download</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Legal</h4>
+                        <a href="/privacy-policy.html" class="footer-link">Privacy Policy</a>
+                        <a href="/terms-of-service.html" class="footer-link">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RailShot TV. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

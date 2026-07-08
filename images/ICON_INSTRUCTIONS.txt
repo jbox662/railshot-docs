@@ -1,0 +1,31 @@
+PWA Icon Instructions
+=====================
+
+You need to create two icon files for the Progressive Web App:
+
+1. icon-192.png (192x192 pixels)
+2. icon-512.png (512x512 pixels)
+
+These icons will appear when users add RailShot TV to their iOS home screen.
+
+Design Guidelines:
+- Use your RailShot TV branding/logo
+- Simple, recognizable design
+- High contrast for visibility
+- PNG format with transparency
+- Square aspect ratio
+
+You can create these icons using:
+- Canva (free online tool)
+- Figma
+- Adobe Photoshop/Illustrator
+- Any graphic design software
+
+Temporary Solution:
+Until you create custom icons, you can use any billiard-themed images or your logo resized to these dimensions.
+
+Upload Instructions:
+1. Create your icon files
+2. Name them exactly: icon-192.png and icon-512.png
+3. Upload to the /images/ folder in Plesk
+4. Replace this ICON_INSTRUCTIONS.txt file

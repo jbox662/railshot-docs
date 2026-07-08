@@ -2,137 +2,319 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Privacy Policy - RailShot TV</title>
+    <meta name="description" content="RailShot TV Privacy Policy. How we handle information when you use our billiards livestreaming app.">
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00A8E8">
+    
+    <!-- iOS Specific PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RailShot TV">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-            color: #333;
+        /* Legal page specific styles */
+        .legal-page {
+            padding: var(--spacing-3xl) 0;
+            min-height: 100vh;
         }
-        h1 { color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 10px; }
-        h2 { color: #2c5282; margin-top: 30px; }
-        a { color: #3182ce; }
-        .last-updated { color: #666; font-style: italic; }
+        
+        .legal-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .legal-updated {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .legal-intro {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .legal-section {
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .legal-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .legal-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+        }
+        
+        .legal-section p {
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .legal-section ul {
+            margin: var(--spacing-sm) 0 var(--spacing-md) 0;
+            padding-left: var(--spacing-lg);
+        }
+        
+        .legal-section li {
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .legal-section strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        .legal-section a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .legal-section a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: var(--spacing-lg);
+            transition: all 0.3s ease;
+        }
+        
+        .back-home:hover {
+            gap: var(--spacing-sm);
+        }
+        
+        .back-home i {
+            width: 20px;
+            height: 20px;
+        }
+        
+        @media (max-width: 640px) {
+            .legal-title {
+                font-size: 2rem;
+            }
+            
+            .legal-intro {
+                font-size: 1rem;
+            }
+            
+            .legal-section h2 {
+                font-size: 1.25rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Privacy Policy for RailShot TV</h1>
-    <p class="last-updated">Last Updated: November 5, 2025</p>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                    <span>RailShot TV</span>
+                </a>
+                <nav class="nav">
+                    <a href="/#features" class="nav-link">Features</a>
+                    <a href="/#contact" class="nav-link">Contact</a>
+                    <a href="/#download" class="nav-link">Download</a>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-    <h2>Introduction</h2>
-    <p>RailShot TV ("we", "our", or "us") operates a mobile application for live video streaming. This Privacy Policy explains how we collect, use, and protect your information when you use our app.</p>
+    <!-- Legal Page Content -->
+    <div class="legal-page">
+        <div class="legal-container">
+            <a href="/" class="back-home">
+                <i data-lucide="arrow-left"></i>
+                <span>Back to Home</span>
+            </a>
+            
+            <div class="legal-header">
+                <h1 class="legal-title">Privacy Policy</h1>
+                <p class="legal-updated">Last updated: January 2026</p>
+            </div>
 
-    <h2>Information We Collect</h2>
-    
-    <h3>Information You Provide</h3>
-    <ul>
-        <li><strong>Facebook Account Information</strong>: When you connect your Facebook account, we access:
-            <ul>
-                <li>Your public profile information (name, profile picture)</li>
-                <li>Your Facebook Pages that you manage</li>
-                <li>Permission to create live video streams on your behalf</li>
-            </ul>
-        </li>
-    </ul>
+            <p class="legal-intro">RailShot TV ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our mobile application ("App").</p>
 
-    <h3>Automatically Collected Information</h3>
-    <ul>
-        <li><strong>Usage Data</strong>: Information about how you use the app</li>
-        <li><strong>Device Information</strong>: Device type, operating system, app version</li>
-        <li><strong>Stream Data</strong>: Information about your live streams (duration, destinations)</li>
-    </ul>
+            <div class="legal-section">
+                <h2>1. Information We Collect</h2>
+                <p>RailShot TV is designed to provide professional billiards livestreaming functionality. We collect minimal information necessary for the App to function.</p>
+                
+                <h3>Device Permissions</h3>
+                <p>The App requests the following permissions to provide streaming functionality:</p>
+                <ul>
+                    <li><strong>Camera Access:</strong> Required to capture video for livestreaming. Video is streamed directly to your chosen platform (YouTube or Facebook) and is not stored by us.</li>
+                    <li><strong>Microphone Access:</strong> Required to capture audio for livestreaming. Audio is streamed directly to your chosen platform and is not stored by us.</li>
+                    <li><strong>Network Access:</strong> Required to stream content to YouTube and Facebook, and to discover NDI cameras on your local network.</li>
+                    <li><strong>Local Network Access:</strong> Required to discover and connect to NDI (Network Device Interface) cameras on your local network.</li>
+                </ul>
+                
+                <h3>Third-Party Authentication</h3>
+                <p>To enable livestreaming, the App uses OAuth authentication with:</p>
+                <ul>
+                    <li><strong>YouTube:</strong> We use YouTube's official API to authenticate and obtain streaming credentials. We do not access or store your YouTube account information beyond what is necessary for streaming.</li>
+                    <li><strong>Facebook:</strong> We use Facebook's official API to authenticate and obtain streaming credentials. We do not access or store your Facebook account information beyond what is necessary for streaming.</li>
+                </ul>
+            </div>
 
-    <h2>How We Use Your Information</h2>
-    <p>We use the collected information to:</p>
-    <ul>
-        <li>Enable you to stream live video to Facebook Pages</li>
-        <li>Manage your stream destinations (YouTube, Facebook, RTMP)</li>
-        <li>Improve app functionality and user experience</li>
-        <li>Provide customer support</li>
-    </ul>
+            <div class="legal-section">
+                <h2>2. How We Use Information</h2>
+                <p>The information accessed by the App is used solely for the following purposes:</p>
+                <ul>
+                    <li>To enable livestreaming functionality to YouTube and Facebook</li>
+                    <li>To display camera preview and scoreboard overlays</li>
+                    <li>To discover and connect to NDI cameras on your local network</li>
+                    <li>To manage game scores and match information (stored locally on your device)</li>
+                </ul>
+            </div>
 
-    <h2>Data Storage and Security</h2>
-    <ul>
-        <li><strong>Facebook Access Tokens</strong>: Stored securely in Firebase Firestore with encryption</li>
-        <li><strong>Stream Settings</strong>: Stored locally on your device</li>
-        <li><strong>No Video Content</strong>: We do not store or have access to your video content; it streams directly to your destinations</li>
-    </ul>
+            <div class="legal-section">
+                <h2>3. Data Storage and Collection</h2>
+                <p><strong>We do not collect, store, or transmit any personal data to our servers.</strong> All data remains on your device or is streamed directly to your chosen platform (YouTube or Facebook).</p>
+                <ul>
+                    <li>Game scores and match information are stored locally on your device using iOS UserDefaults</li>
+                    <li>Video and audio streams are sent directly to YouTube or Facebook — we do not intercept or store this content</li>
+                    <li>We do not track your usage, collect analytics, or monitor your activity</li>
+                </ul>
+            </div>
 
-    <h2>Third-Party Services</h2>
-    <p>We use the following third-party services:</p>
-    <ul>
-        <li><strong>Facebook</strong>: For authentication and live streaming</li>
-        <li><strong>YouTube</strong>: For live streaming (if you choose to connect)</li>
-        <li><strong>Firebase (Google)</strong>: For backend services and data storage</li>
-        <li><strong>Expo</strong>: For app development and delivery</li>
-    </ul>
-    <p>Each third-party service has its own privacy policy:</p>
-    <ul>
-        <li>Facebook: <a href="https://www.facebook.com/privacy/explanation">https://www.facebook.com/privacy/explanation</a></li>
-        <li>Google/YouTube: <a href="https://policies.google.com/privacy">https://policies.google.com/privacy</a></li>
-        <li>Firebase: <a href="https://firebase.google.com/support/privacy">https://firebase.google.com/support/privacy</a></li>
-    </ul>
+            <div class="legal-section">
+                <h2>4. Third-Party Services</h2>
+                <p>The App integrates with the following third-party services:</p>
+                <ul>
+                    <li><strong>YouTube:</strong> Your use of YouTube is governed by YouTube's Privacy Policy and Terms of Service. We only use YouTube's API to authenticate and obtain streaming credentials.</li>
+                    <li><strong>Facebook:</strong> Your use of Facebook is governed by Facebook's Privacy Policy and Terms of Service. We only use Facebook's API to authenticate and obtain streaming credentials.</li>
+                    <li><strong>NDI SDK:</strong> We use the NDI SDK to discover and connect to NDI cameras. This is a local network discovery feature and does not transmit data outside your network.</li>
+                </ul>
+            </div>
 
-    <h2>Your Rights</h2>
-    <p>You have the right to:</p>
-    <ul>
-        <li><strong>Access</strong>: Request a copy of your data</li>
-        <li><strong>Deletion</strong>: Request deletion of your data (see Data Deletion section)</li>
-        <li><strong>Disconnect</strong>: Revoke app permissions at any time through Facebook settings</li>
-        <li><strong>Opt-Out</strong>: Stop using the app at any time</li>
-    </ul>
+            <div class="legal-section">
+                <h2>5. User Tracking</h2>
+                <p><strong>We do not track users.</strong> The App does not use any tracking technologies, advertising identifiers, or analytics services. We do not collect information about your device, location, or usage patterns.</p>
+            </div>
 
-    <h2>Data Deletion</h2>
-    <p>To delete your data:</p>
-    <ol>
-        <li><strong>Disconnect Facebook</strong>: Go to Facebook Settings → Apps and Websites → RailShot TV → Remove</li>
-        <li><strong>Delete App Data</strong>: Uninstall the RailShot TV app from your device</li>
-        <li><strong>Request Data Deletion</strong>: Email us at jbox38821@gmail.com with your request</li>
-    </ol>
-    <p>We will delete your data within 30 days of your request.</p>
+            <div class="legal-section">
+                <h2>6. Children's Privacy</h2>
+                <p>Our App is not intended for children under the age of 13. We do not knowingly collect information from children under 13. If you believe we have inadvertently collected such information, please contact us immediately.</p>
+            </div>
 
-    <h2>Children's Privacy</h2>
-    <p>RailShot TV is not intended for users under 13 years of age. We do not knowingly collect information from children under 13.</p>
+            <div class="legal-section">
+                <h2>7. Your Rights</h2>
+                <p>You have the following rights regarding your information:</p>
+                <ul>
+                    <li>You can revoke camera, microphone, or network permissions at any time through your iOS device settings</li>
+                    <li>You can disconnect from YouTube or Facebook at any time through the App settings</li>
+                    <li>You can delete locally stored game data by uninstalling the App</li>
+                    <li>You can stop streaming at any time</li>
+                </ul>
+            </div>
 
-    <h2>Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify you of any changes by updating the "Last Updated" date.</p>
+            <div class="legal-section">
+                <h2>8. Data Security</h2>
+                <p>Since we do not collect or store your data, there is no risk of data breaches from our servers. All streaming is done directly between your device and your chosen platform (YouTube or Facebook) using secure protocols.</p>
+            </div>
 
-    <h2>Contact Us</h2>
-    <p>If you have questions about this Privacy Policy or your data:</p>
-    <ul>
-        <li><strong>Email</strong>: jbox38821@gmail.com</li>
-        <li><strong>App Name</strong>: RailShot TV</li>
-    </ul>
+            <div class="legal-section">
+                <h2>9. Changes to This Privacy Policy</h2>
+                <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date. You are advised to review this Privacy Policy periodically for any changes.</p>
+            </div>
 
-    <h2>Facebook Data Usage</h2>
-    <p><strong>What data we access from Facebook:</strong></p>
-    <ul>
-        <li>Public profile (name, profile picture)</li>
-        <li>List of Pages you manage</li>
-        <li>Ability to create live videos on your Pages</li>
-    </ul>
+            <div class="legal-section">
+                <h2>10. Contact Us</h2>
+                <p>If you have any questions about this Privacy Policy, please contact us:</p>
+                <p><strong>RailShot TV</strong><br>
+                Email: <a href="mailto:support@railshottv.com">support@railshottv.com</a><br>
+                Website: <a href="https://railshottv.com">https://railshottv.com</a></p>
+            </div>
 
-    <p><strong>What we do NOT access:</strong></p>
-    <ul>
-        <li>Your Facebook posts or photos</li>
-        <li>Your friends list</li>
-        <li>Your private messages</li>
-        <li>Your email address (unless you explicitly provide it)</li>
-    </ul>
+            <div class="legal-section">
+                <h2>11. Consent</h2>
+                <p>By using RailShot TV, you consent to this Privacy Policy. If you do not agree with this policy, please do not use the App.</p>
+            </div>
+        </div>
+    </div>
 
-    <p><strong>How long we keep your data:</strong></p>
-    <ul>
-        <li>Facebook access tokens: Until you disconnect or they expire</li>
-        <li>Stream settings: Until you delete them or uninstall the app</li>
-        <li>We do not store your video content</li>
-    </ul>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                        <span>RailShot TV</span>
+                    </div>
+                    <p class="footer-tagline">Professional Billiard Livestreaming for iOS</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Product</h4>
+                        <a href="/#features" class="footer-link">Features</a>
+                        <a href="/#contact" class="footer-link">Contact</a>
+                        <a href="/#download" class="footer-link">Download</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Legal</h4>
+                        <a href="/privacy-policy.html" class="footer-link">Privacy Policy</a>
+                        <a href="/terms-of-service.html" class="footer-link">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RailShot TV. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
-    <h2>Your Consent</h2>
-    <p>By using RailShot TV, you consent to this Privacy Policy.</p>
+    <!-- Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>
-

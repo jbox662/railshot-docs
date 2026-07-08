@@ -2,121 +2,360 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Terms of Service - RailShot TV</title>
+    <meta name="description" content="RailShot TV Terms of Service. Agreement governing your use of our billiards livestreaming app.">
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00A8E8">
+    
+    <!-- iOS Specific PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RailShot TV">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-            color: #333;
+        /* Legal page specific styles */
+        .legal-page {
+            padding: var(--spacing-3xl) 0;
+            min-height: 100vh;
         }
-        h1 { color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 10px; }
-        h2 { color: #2c5282; margin-top: 30px; }
-        .last-updated { color: #666; font-style: italic; }
+        
+        .legal-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .legal-updated {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .legal-intro {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .legal-section {
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .legal-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .legal-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+        }
+        
+        .legal-section p {
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .legal-section ul {
+            margin: var(--spacing-sm) 0 var(--spacing-md) 0;
+            padding-left: var(--spacing-lg);
+        }
+        
+        .legal-section li {
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .legal-section strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        .legal-section a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .legal-section a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: var(--spacing-lg);
+            transition: all 0.3s ease;
+        }
+        
+        .back-home:hover {
+            gap: var(--spacing-sm);
+        }
+        
+        .back-home i {
+            width: 20px;
+            height: 20px;
+        }
+        
+        @media (max-width: 640px) {
+            .legal-title {
+                font-size: 2rem;
+            }
+            
+            .legal-intro {
+                font-size: 1rem;
+            }
+            
+            .legal-section h2 {
+                font-size: 1.25rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Terms of Service for RailShot TV</h1>
-    <p class="last-updated">Last Updated: November 5, 2025</p>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                    <span>RailShot TV</span>
+                </a>
+                <nav class="nav">
+                    <a href="/#features" class="nav-link">Features</a>
+                    <a href="/#contact" class="nav-link">Contact</a>
+                    <a href="/#download" class="nav-link">Download</a>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-    <h2>1. Acceptance of Terms</h2>
-    <p>By downloading, installing, or using RailShot TV ("the App"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the App.</p>
+    <!-- Legal Page Content -->
+    <div class="legal-page">
+        <div class="legal-container">
+            <a href="/" class="back-home">
+                <i data-lucide="arrow-left"></i>
+                <span>Back to Home</span>
+            </a>
+            
+            <div class="legal-header">
+                <h1 class="legal-title">Terms of Service</h1>
+                <p class="legal-updated">Last updated: January 2026</p>
+            </div>
 
-    <h2>2. Description of Service</h2>
-    <p>RailShot TV is a mobile application that allows users to:</p>
-    <ul>
-        <li>Stream live video from their device camera</li>
-        <li>Broadcast simultaneously to multiple platforms (Facebook, YouTube, RTMP)</li>
-        <li>Manage stream destinations and settings</li>
-    </ul>
+            <div class="legal-section">
+                <h2>Agreement to Terms</h2>
+                <p class="legal-intro">By downloading, installing, or using RailShot TV ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.</p>
+            </div>
 
-    <h2>3. User Accounts and Authentication</h2>
-    <h3>Facebook Connection</h3>
-    <ul>
-        <li>You may connect your Facebook account to stream to Facebook Pages</li>
-        <li>You must have permission to manage the Facebook Pages you stream to</li>
-        <li>You are responsible for maintaining the security of your Facebook login</li>
-    </ul>
+            <div class="legal-section">
+                <h2>1. Description of Service</h2>
+                <p>RailShot TV is a mobile application that enables users to livestream billiards matches to YouTube and Facebook. The App provides:</p>
+                <ul>
+                    <li>Professional scoreboard overlays with customizable styles</li>
+                    <li>Live streaming functionality to YouTube and Facebook</li>
+                    <li>Camera and audio capture for streaming</li>
+                    <li>NDI camera support for advanced setups</li>
+                    <li>Game score tracking and management</li>
+                </ul>
+            </div>
 
-    <h3>YouTube Connection</h3>
-    <ul>
-        <li>You may connect your YouTube account to stream to your YouTube channel</li>
-        <li>You must comply with YouTube's Terms of Service</li>
-    </ul>
+            <div class="legal-section">
+                <h2>2. User Responsibilities</h2>
+                <p>You are responsible for:</p>
+                <ul>
+                    <li>All content you stream using the App</li>
+                    <li>Compliance with YouTube and Facebook's terms of service</li>
+                    <li>Obtaining necessary permissions for any content you stream</li>
+                    <li>Ensuring you have the right to stream any audio or video content</li>
+                    <li>Maintaining the security of your YouTube and Facebook accounts</li>
+                </ul>
+            </div>
 
-    <h2>4. Acceptable Use</h2>
-    <p>You agree to:</p>
-    <ul>
-        <li>Only stream content you have the right to broadcast</li>
-        <li>Comply with all applicable laws and platform policies</li>
-        <li>Not use the App for illegal, harmful, or offensive content</li>
-        <li>Respect copyright, trademark, and intellectual property rights</li>
-    </ul>
+            <div class="legal-section">
+                <h2>3. Prohibited Uses</h2>
+                <p>You agree not to use the App to:</p>
+                <ul>
+                    <li>Stream illegal, harmful, or offensive content</li>
+                    <li>Violate any laws or regulations</li>
+                    <li>Infringe on intellectual property rights</li>
+                    <li>Harass, abuse, or harm others</li>
+                    <li>Transmit viruses or malicious code</li>
+                    <li>Attempt to reverse engineer or modify the App</li>
+                </ul>
+            </div>
 
-    <p>You agree NOT to:</p>
-    <ul>
-        <li>Stream copyrighted content without permission</li>
-        <li>Use the App to harass, abuse, or harm others</li>
-        <li>Attempt to hack, reverse engineer, or compromise the App</li>
-        <li>Use the App for spam or unauthorized advertising</li>
-    </ul>
+            <div class="legal-section">
+                <h2>4. Third-Party Services</h2>
+                <p>The App integrates with third-party services:</p>
+                <ul>
+                    <li><strong>YouTube:</strong> Your use of YouTube is subject to YouTube's Terms of Service. We are not responsible for YouTube's services or policies.</li>
+                    <li><strong>Facebook:</strong> Your use of Facebook is subject to Facebook's Terms of Service. We are not responsible for Facebook's services or policies.</li>
+                    <li><strong>NDI SDK:</strong> The App uses the NDI SDK for camera discovery. NDI is a third-party technology.</li>
+                </ul>
+                <p>We are not responsible for the availability, accuracy, or content of third-party services.</p>
+            </div>
 
-    <h2>5. Content Ownership</h2>
-    <ul>
-        <li><strong>Your Content</strong>: You retain all rights to the content you stream</li>
-        <li><strong>App Features</strong>: We own the App and its features</li>
-        <li><strong>No Storage</strong>: We do not store or claim rights to your video content</li>
-    </ul>
+            <div class="legal-section">
+                <h2>5. Intellectual Property</h2>
+                <p>The App and its content, including but not limited to:</p>
+                <ul>
+                    <li>Software code and design</li>
+                    <li>Scoreboard designs and graphics</li>
+                    <li>User interface elements</li>
+                    <li>Trademarks and logos</li>
+                </ul>
+                <p>are owned by RailShot TV and protected by copyright and trademark laws. You may not copy, modify, or distribute the App without permission.</p>
+            </div>
 
-    <h2>6. Third-Party Platforms</h2>
-    <p>When streaming to Facebook, YouTube, or other platforms:</p>
-    <ul>
-        <li>You must comply with their respective Terms of Service</li>
-        <li>We are not responsible for their actions or policies</li>
-        <li>Your relationship with those platforms is separate from this agreement</li>
-    </ul>
+            <div class="legal-section">
+                <h2>6. User Content</h2>
+                <p>You retain ownership of any content you stream using the App. However, by using the App, you:</p>
+                <ul>
+                    <li>Grant us a license to use your content solely for providing the App's services</li>
+                    <li>Represent that you have the right to stream such content</li>
+                    <li>Agree that we are not responsible for your content</li>
+                </ul>
+                <p>Content is streamed directly to your chosen platform (YouTube or Facebook). We do not store or host your content.</p>
+            </div>
 
-    <h2>7. Disclaimer of Warranties</h2>
-    <p>THE APP IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. WE DO NOT GUARANTEE:</p>
-    <ul>
-        <li>Uninterrupted or error-free service</li>
-        <li>Stream quality or reliability</li>
-        <li>Compatibility with all devices or platforms</li>
-        <li>That the App will meet your specific needs</li>
-    </ul>
+            <div class="legal-section">
+                <h2>7. Disclaimers</h2>
+                <p>The App is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to:</p>
+                <ul>
+                    <li>Warranties of merchantability</li>
+                    <li>Fitness for a particular purpose</li>
+                    <li>Non-infringement</li>
+                    <li>Accuracy or reliability of the App</li>
+                </ul>
+                <p>We do not guarantee that the App will be uninterrupted, error-free, or secure.</p>
+            </div>
 
-    <h2>8. Limitation of Liability</h2>
-    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW:</p>
-    <ul>
-        <li>We are not liable for any damages arising from your use of the App</li>
-        <li>This includes lost revenue, data loss, or stream failures</li>
-        <li>Our total liability shall not exceed the amount you paid for the App (if any)</li>
-    </ul>
+            <div class="legal-section">
+                <h2>8. Limitation of Liability</h2>
+                <p>To the maximum extent permitted by law, RailShot TV shall not be liable for:</p>
+                <ul>
+                    <li>Any indirect, incidental, special, or consequential damages</li>
+                    <li>Loss of profits, data, or business opportunities</li>
+                    <li>Service interruptions or failures</li>
+                    <li>Issues with third-party services (YouTube, Facebook)</li>
+                </ul>
+                <p>Our total liability shall not exceed the amount you paid for the App, if any.</p>
+            </div>
 
-    <h2>9. Privacy</h2>
-    <p>Your use of the App is also governed by our <a href="privacy-policy.html">Privacy Policy</a>. Please review it to understand how we collect and use your information.</p>
+            <div class="legal-section">
+                <h2>9. Indemnification</h2>
+                <p>You agree to indemnify and hold harmless RailShot TV, its owners, employees, and affiliates from any claims, damages, losses, or expenses (including legal fees) arising from your use of the App or violation of these Terms.</p>
+            </div>
 
-    <h2>10. Contact</h2>
-    <p>For questions about these Terms of Service:</p>
-    <ul>
-        <li><strong>Email</strong>: jbox38821@gmail.com</li>
-        <li><strong>App Name</strong>: RailShot TV</li>
-    </ul>
+            <div class="legal-section">
+                <h2>10. Termination</h2>
+                <p>We reserve the right to:</p>
+                <ul>
+                    <li>Terminate or suspend your access to the App at any time</li>
+                    <li>Modify or discontinue the App without notice</li>
+                    <li>Remove or edit content at our discretion</li>
+                </ul>
+                <p>You may stop using the App at any time by uninstalling it from your device.</p>
+            </div>
 
-    <h2>11. Facebook-Specific Terms</h2>
-    <p>When using Facebook features:</p>
-    <ul>
-        <li>You must comply with Facebook's Platform Terms</li>
-        <li>You authorize us to create live videos on your behalf</li>
-        <li>You can revoke access at any time through Facebook settings</li>
-        <li>We use Facebook APIs in accordance with their policies</li>
-    </ul>
+            <div class="legal-section">
+                <h2>11. Changes to Terms</h2>
+                <p>We may update these Terms from time to time. We will notify you of significant changes by updating the "Last updated" date. Your continued use of the App after changes constitutes acceptance of the new Terms.</p>
+            </div>
 
-    <hr>
-    <p><strong>By using RailShot TV, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong></p>
+            <div class="legal-section">
+                <h2>12. Governing Law</h2>
+                <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which RailShot TV operates, without regard to its conflict of law provisions.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>13. Contact Information</h2>
+                <p>If you have any questions about these Terms of Service, please contact us:</p>
+                <p><strong>RailShot TV</strong><br>
+                Email: <a href="mailto:support@railshottv.com">support@railshottv.com</a><br>
+                Website: <a href="https://railshottv.com">https://railshottv.com</a></p>
+            </div>
+
+            <div class="legal-section">
+                <h2>14. Acceptance</h2>
+                <p>By using RailShot TV, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these Terms, please do not use the App.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="/images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                        <span>RailShot TV</span>
+                    </div>
+                    <p class="footer-tagline">Professional Billiard Livestreaming for iOS</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Product</h4>
+                        <a href="/#features" class="footer-link">Features</a>
+                        <a href="/#contact" class="footer-link">Contact</a>
+                        <a href="/#download" class="footer-link">Download</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4 class="footer-column-title">Legal</h4>
+                        <a href="/privacy-policy.html" class="footer-link">Privacy Policy</a>
+                        <a href="/terms-of-service.html" class="footer-link">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RailShot TV. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>
-

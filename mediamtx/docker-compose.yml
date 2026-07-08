@@ -1,0 +1,17 @@
+# MediaMTX for RailShot TV live tables
+# Place this folder on the server that can reach your Reolink NVR.
+#
+# 1. Set MTX_WEBRTCADDITIONALHOSTS to your public IP or hostname
+# 2. Edit mediamtx.yml — credentials, NVR IP, and paths (match js/streams-config.js ids)
+# 3. Run: docker compose up -d
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    network_mode: host
+    environment:
+      # Replace with your VPS public IP or hostname (needed for WebRTC)
+      - MTX_WEBRTCADDITIONALHOSTS=YOUR_SERVER_PUBLIC_IP
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    restart: unless-stopped
