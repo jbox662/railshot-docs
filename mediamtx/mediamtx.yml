@@ -4,7 +4,7 @@
 
 paths:
   table1:
-    runOnDemand: pull-table1.bat
+    runOnDemand: cmd.exe /C pull-table1.bat
     runOnDemandRestart: yes
     runOnDemandStartTimeout: 120s
     runOnDemandCloseAfter: 30s

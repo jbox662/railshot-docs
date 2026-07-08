@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 REM MediaMTX runOnDemand — pulls camera via ffmpeg, publishes to local RTSP.
 REM Env vars from MediaMTX: RTSP_PORT, MTX_PATH
 

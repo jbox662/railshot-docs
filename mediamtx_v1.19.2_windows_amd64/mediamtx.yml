@@ -828,8 +828,8 @@ paths:
   # Router rule: external 8554 -> 192.168.68.89:554 (TCP)
   # Replace YOUR_HOME_PUBLIC_IP with hall/home WAN IP
   table1:
-    # Windows: use pull-table1.bat (ffmpeg in PATH). Start mediamtx from this folder.
-    runOnDemand: pull-table1.bat
+    # Windows: Go cannot exec .bat directly — must use cmd.exe /C
+    runOnDemand: cmd.exe /C pull-table1.bat
     runOnDemandRestart: yes
     runOnDemandStartTimeout: 120s
     runOnDemandCloseAfter: 30s
