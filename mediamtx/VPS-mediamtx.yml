@@ -1,19 +1,13 @@
-# MediaMTX — sync note
-# The runnable Windows install is:
-#   ../mediamtx_v1.19.2_windows_amd64/mediamtx.exe + mediamtx.yml
-# Use start-mediamtx.bat there for local tests.
-# Use VPS_MEDIAMTX_SETUP.md for Windows Plesk VPS deployment.
-
-logLevel: info
-webrtc: yes
-hls: yes
-rtmp: no
-srt: no
-webrtcAdditionalHosts: [127.0.0.1, 192.168.68.91, 160.153.184.255]
+# Copy this ENTIRE file to C:\mediamtx\mediamtx.yml on the VPS
+# OR run deploy-mediamtx-to-vps.bat from the repo root on the VPS
+#
+# Important: use mediamtx_v1.19.2_windows_amd64\mediamtx.yml (full config)
+# This stub is kept for reference only — table1 settings:
 
 paths:
   table1:
-    # Home router forwards external 8554 -> 192.168.68.89:554
-    # Replace YOUR_HOME_PUBLIC_IP with your hall/home WAN IP (whatismyip.com on camera Wi-Fi)
     source: rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main
     sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 30s
+    sourceOnDemandCloseAfter: 15s
+    rtspTransport: tcp

@@ -830,8 +830,9 @@ paths:
   table1:
     source: rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main
     sourceOnDemand: yes
-    sourceOnDemandStartTimeout: 15s
+    sourceOnDemandStartTimeout: 30s
     sourceOnDemandCloseAfter: 15s
+    rtspTransport: tcp
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.
