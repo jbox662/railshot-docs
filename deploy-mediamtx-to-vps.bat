@@ -33,10 +33,15 @@ if errorlevel 1 (
 copy /Y "%SRC%" "%DEST%"
 echo Config copied to %DEST%
 
+if exist "%REPO%test-vps-camera.ps1" (
+  copy /Y "%REPO%test-vps-camera.ps1" "%DEST_DIR%\test-vps-camera.ps1"
+  echo Diagnostic script copied to %DEST_DIR%\test-vps-camera.ps1
+)
+
 taskkill /IM mediamtx.exe /F >nul 2>&1
 timeout /t 2 /nobreak >nul
 start "" /D "%DEST_DIR%" "%DEST_DIR%\mediamtx.exe"
 echo MediaMTX restarted. table1 uses ffmpeg runOnDemand + TCP.
-echo Test: powershell -File "%REPO%test-vps-camera.ps1"
+echo Test: powershell -File C:\mediamtx\test-vps-camera.ps1
 echo   or: Invoke-WebRequest http://127.0.0.1:8888/table1/index.m3u8 -UseBasicParsing
 pause
