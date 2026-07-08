@@ -1,0 +1,21 @@
+{
+    "live": {
+        "mediamtxHost": "160.153.184.255",
+        "useHttpsProxy": true,
+        "preferredProtocol": "hls",
+        "tables": [
+            {
+                "id": "table1",
+                "name": "Test Camera",
+                "description": "192.168.68.89",
+                "rtspUrl": "rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main"
+            }
+        ]
+    },
+    "site": {
+        "heroTitle": "Professional Billiard Livestreaming",
+        "heroSubtitle": "Stream your billiard matches to YouTube and Facebook with professional HD/4K quality. Go live in seconds with instant game setup and remote scoreboard control. Requires iOS 18 or higher.",
+        "contactEmail": "support@railshottv.com",
+        "downloadNote": "Requires iOS 18 or higher"
+    }
+}
