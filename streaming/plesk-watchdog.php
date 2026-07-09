@@ -9,59 +9,86 @@
  * SETUP in Plesk:
  *   Scheduled Tasks → Add Task
  *   Task type : Run a PHP script
- *   Script    : streaming/plesk-watchdog.php   (relative to httpdocs)
+ *   Script    : httpdocs/streaming/plesk-watchdog.php
  *   Schedule  : * * * * *  (every minute)
+ *
+ * LOG FILE: C:\Inetpub\vhosts\railshottv.com\httpdocs\streaming\watchdog.log
  */
 
+// ── Logging helper ────────────────────────────────────────────────────────
+$logFile = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\watchdog.log';
+
+function wlog($msg) {
+    global $logFile;
+    $line = date('[Y-m-d H:i:s]') . ' ' . $msg . "\n";
+    file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    echo $line;
+}
+
+// Catch all PHP errors and write them to the log
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    wlog("PHP ERROR [$errno] $errstr in $errfile on line $errline");
+    return true;
+});
+
+wlog("=== Watchdog started ===");
+wlog("PHP version: " . PHP_VERSION);
+wlog("__DIR__: " . __DIR__);
+wlog("__FILE__: " . __FILE__);
+
 // ── Config ────────────────────────────────────────────────────────────────
-// Resolve the httpdocs root regardless of how Plesk sets __DIR__
-$httpdocs  = rtrim(str_replace('\\', '/', dirname(__DIR__, 0)), '/') . '/';
-// __DIR__ is the streaming/ folder; cameras.conf is in the same directory
-$confFile  = __DIR__ . DIRECTORY_SEPARATOR . 'cameras.conf';
-// Fallback: try the known absolute Plesk path if __DIR__ resolves unexpectedly
+// Try __DIR__ first, then fall back to the known absolute path
+$confFile = __DIR__ . DIRECTORY_SEPARATOR . 'cameras.conf';
+wlog("Looking for cameras.conf at: $confFile");
+
 if (!file_exists($confFile)) {
     $confFile = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\cameras.conf';
+    wlog("Not found, trying fallback: $confFile");
 }
-$logDir    = sys_get_temp_dir();   // C:\Windows\Temp on Windows Plesk
-$pidDir    = sys_get_temp_dir();
 
-// Find ffmpeg — check common Windows locations
+if (!file_exists($confFile)) {
+    wlog("ERROR: cameras.conf not found at either path. Aborting.");
+    exit(1);
+}
+
+wlog("Found cameras.conf at: $confFile");
+
+// ── Find FFmpeg ───────────────────────────────────────────────────────────
 $ffmpegCandidates = [
     'C:\\Users\\funbucket\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1.2-full_build\\bin\\ffmpeg.exe',
     'C:\\ffmpeg\\bin\\ffmpeg.exe',
     'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-    'ffmpeg',  // if it's in PATH
+    'C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe',
 ];
 
 $ffmpeg = null;
-foreach ($ffmpegCandidates as $candidate) {
-    if ($candidate === 'ffmpeg') {
-        // Check PATH
-        exec('where ffmpeg 2>NUL', $out, $ret);
-        if ($ret === 0 && !empty($out[0])) {
-            $ffmpeg = 'ffmpeg';
+
+// Check PATH first
+exec('where ffmpeg 2>NUL', $whereOut, $whereRet);
+if ($whereRet === 0 && !empty($whereOut[0])) {
+    $ffmpeg = trim($whereOut[0]);
+    wlog("Found ffmpeg in PATH: $ffmpeg");
+}
+
+if (!$ffmpeg) {
+    foreach ($ffmpegCandidates as $candidate) {
+        if (file_exists($candidate)) {
+            $ffmpeg = $candidate;
+            wlog("Found ffmpeg at: $ffmpeg");
             break;
         }
-    } elseif (file_exists($candidate)) {
-        $ffmpeg = $candidate;
-        break;
     }
 }
 
 if (!$ffmpeg) {
-    file_put_contents($logDir . '\\railshot-watchdog.log',
-        date('[Y-m-d H:i:s]') . " ERROR: ffmpeg not found\n", FILE_APPEND);
+    wlog("ERROR: ffmpeg not found in PATH or any known location.");
+    wlog("Checked: " . implode(', ', $ffmpegCandidates));
     exit(1);
 }
 
 // ── Parse cameras.conf ────────────────────────────────────────────────────
-if (!file_exists($confFile)) {
-    file_put_contents($logDir . '\\railshot-watchdog.log',
-        date('[Y-m-d H:i:s]') . " ERROR: cameras.conf not found at $confFile\n", FILE_APPEND);
-    exit(1);
-}
-
 $lines = file($confFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+$cameraCount = 0;
 
 foreach ($lines as $line) {
     $line = trim($line);
@@ -73,15 +100,17 @@ foreach ($lines as $line) {
     [$table, $rtspUrl, $ytKey] = $parts;
     if (!$table || !$rtspUrl || !$ytKey) continue;
 
-    $logFile = $logDir . "\\railshot-stream-$table.log";
-    $pidFile = $pidDir . "\\railshot-stream-$table.pid";
+    $cameraCount++;
+    $streamLog = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\stream-' . $table . '.log';
+    $pidFile   = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "railshot-$table.pid";
+
+    wlog("Checking camera: $table");
 
     // ── Check if process is still running ─────────────────────────────────
     $running = false;
     if (file_exists($pidFile)) {
         $pid = (int) file_get_contents($pidFile);
         if ($pid > 0) {
-            // Check if PID is alive using tasklist
             exec("tasklist /FI \"PID eq $pid\" /NH 2>NUL", $taskOut);
             foreach ($taskOut as $taskLine) {
                 if (strpos($taskLine, (string)$pid) !== false) {
@@ -89,50 +118,82 @@ foreach ($lines as $line) {
                     break;
                 }
             }
+            wlog("  PID $pid is " . ($running ? "running" : "NOT running"));
         }
+    } else {
+        wlog("  No PID file found — stream not started yet");
     }
 
     if ($running) {
-        continue; // Already streaming — nothing to do
+        wlog("  Stream OK — skipping");
+        continue;
     }
 
     // ── Start FFmpeg ───────────────────────────────────────────────────────
     $ytUrl   = "rtmp://a.rtmp.youtube.com/live2/$ytKey";
-    $ffmpegQ = '"' . str_replace('"', '\"', $ffmpeg) . '"';
-    $rtspQ   = '"' . str_replace('"', '\"', $rtspUrl) . '"';
-    $ytUrlQ  = '"' . str_replace('"', '\"', $ytUrl) . '"';
+    $ffmpegQ = '"' . $ffmpeg . '"';
+    $rtspQ   = '"' . $rtspUrl . '"';
+    $ytUrlQ  = '"' . $ytUrl . '"';
 
     $cmd = "$ffmpegQ -loglevel warning -rtsp_transport tcp -stimeout 10000000 "
          . "-i $rtspQ -c:v copy -c:a aac -b:a 128k -ar 44100 "
          . "-f flv -flvflags no_duration_filesize $ytUrlQ";
 
-    // Launch detached (START /B keeps it running after PHP exits)
-    $wshCmd = "cmd /c start /B $cmd >> \"$logFile\" 2>&1";
+    wlog("  Starting FFmpeg: $cmd");
 
-    $wsh = new COM('WScript.Shell');
-    $wsh->Run($wshCmd, 0, false); // 0 = hidden window, false = don't wait
+    // Use WScript.Shell to launch detached
+    try {
+        $wsh = new COM('WScript.Shell');
+        $wshCmd = 'cmd /c start "" /B ' . $cmd . ' >> "' . $streamLog . '" 2>&1';
+        wlog("  WScript command: $wshCmd");
+        $wsh->Run($wshCmd, 0, false);
+        wlog("  FFmpeg launched via WScript.Shell");
+    } catch (Exception $e) {
+        wlog("  WScript.Shell failed: " . $e->getMessage() . " — trying popen fallback");
+        $handle = popen('start /B ' . $cmd . ' >> "' . $streamLog . '" 2>&1', 'r');
+        if ($handle) {
+            pclose($handle);
+            wlog("  FFmpeg launched via popen");
+        } else {
+            wlog("  ERROR: Could not start FFmpeg");
+            continue;
+        }
+    }
 
-    // Give it a moment then find the PID by matching ffmpeg processes
+    // Find the new PID
     sleep(2);
     exec('tasklist /FI "IMAGENAME eq ffmpeg.exe" /NH /FO CSV 2>NUL', $procs);
     $newPid = 0;
     foreach (array_reverse($procs) as $proc) {
         $cols = str_getcsv($proc);
-        if (isset($cols[1]) && is_numeric($cols[1])) {
-            $newPid = (int)$cols[1];
-            break; // take the most recently started ffmpeg
+        if (isset($cols[1]) && is_numeric(trim($cols[1], '"'))) {
+            $newPid = (int) trim($cols[1], '"');
+            break;
         }
     }
 
     file_put_contents($pidFile, $newPid);
-    file_put_contents($logFile,
-        date('[Y-m-d H:i:s]') . " Started FFmpeg for $table (PID $newPid)\n", FILE_APPEND);
+    wlog("  FFmpeg started — PID $newPid saved to $pidFile");
 
-    // Keep log to last 500 lines
-    $logLines = file($logFile, FILE_IGNORE_NEW_LINES);
-    if (count($logLines) > 500) {
-        file_put_contents($logFile, implode("\n", array_slice($logLines, -500)) . "\n");
+    // Trim stream log
+    if (file_exists($streamLog)) {
+        $streamLines = file($streamLog, FILE_IGNORE_NEW_LINES);
+        if (count($streamLines) > 500) {
+            file_put_contents($streamLog, implode("\n", array_slice($streamLines, -500)) . "\n");
+        }
     }
 }
 
-echo "Watchdog OK " . date('Y-m-d H:i:s') . "\n";
+if ($cameraCount === 0) {
+    wlog("WARNING: No cameras found in cameras.conf");
+}
+
+// Trim watchdog log to last 1000 lines
+if (file_exists($logFile)) {
+    $allLines = file($logFile, FILE_IGNORE_NEW_LINES);
+    if (count($allLines) > 1000) {
+        file_put_contents($logFile, implode("\n", array_slice($allLines, -1000)) . "\n");
+    }
+}
+
+wlog("=== Watchdog done ===");
