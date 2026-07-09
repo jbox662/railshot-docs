@@ -58,7 +58,7 @@ for /f "usebackq tokens=1,2,3 delims=|" %%A in ("%CONF%") do (
                 echo @echo off
                 echo :loop
                 echo echo [%%date%% %%time%%] Starting stream for !TABLE!...
-                echo "!FFMPEG!" -loglevel warning -rtsp_transport tcp -i "!RTSP!" -c:v copy -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/!YTKEY!"
+                echo "!FFMPEG!" -loglevel warning -rtsp_transport tcp -stimeout 10000000 -i "!RTSP!" -c:v copy -c:a aac -b:a 128k -ar 44100 -f flv -flvflags no_duration_filesize "rtmp://a.rtmp.youtube.com/live2/!YTKEY!"
                 echo echo [%%date%% %%time%%] Stream stopped. Restarting in 10 seconds...
                 echo timeout /t 10 /nobreak ^>nul
                 echo goto loop
