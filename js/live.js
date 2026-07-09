@@ -262,7 +262,8 @@
         currentTable = table;
         currentTableId = table.id;
         titleEl.textContent = table.name;
-        descEl.textContent = table.description || '';
+        // Description is intentionally hidden from viewers (may contain camera IP)
+        if (descEl) descEl.textContent = '';
 
         document.querySelectorAll('.table-item').forEach(function (btn) {
             btn.classList.toggle('active', btn.dataset.stream === table.id);
@@ -318,10 +319,9 @@
             btn.setAttribute('aria-selected', 'false');
             btn.innerHTML =
                 '<span class="table-item-name"></span>' +
-                (table.description ? '<span class="table-item-desc"></span>' : '');
+                '';
             btn.querySelector('.table-item-name').textContent = table.name;
-            const descNode = btn.querySelector('.table-item-desc');
-            if (descNode) descNode.textContent = table.description;
+            // Do not render description in sidebar — may contain camera IP
 
             btn.addEventListener('click', function () { loadTable(table); });
             li.appendChild(btn);

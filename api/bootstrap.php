@@ -385,7 +385,7 @@ function railshot_public_live_config(?string $venueId = null): array
         $allTables[] = [
             'id' => $table['id'],
             'name' => $table['name'],
-            'description' => $table['description'] ?? '',
+            // description intentionally omitted — it often contains the camera IP
         ];
     }
 
