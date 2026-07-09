@@ -1,0 +1,29 @@
+[Unit]
+Description=RailShot TV Stream — %i
+After=network-online.target
+Wants=network-online.target
+# Restart after 10 seconds if the camera goes offline or FFmpeg crashes
+
+[Service]
+Type=simple
+User=www-data
+EnvironmentFile=/etc/railshot/streams/%i.env
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/ffmpeg \
+    -loglevel warning \
+    -rtsp_transport tcp \
+    -i "${RTSP_URL}" \
+    -c:v copy \
+    -c:a aac \
+    -b:a 128k \
+    -ar 44100 \
+    -f flv \
+    "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_KEY}"
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=railshot-stream-%i
+
+[Install]
+WantedBy=multi-user.target
