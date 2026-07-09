@@ -133,7 +133,7 @@ foreach ($lines as $line) {
 
     $cmd = "$ffmpegQ -loglevel warning -rtsp_transport tcp -timeout 10000000 "
          . "-i $rtspQ -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k "
-         . "-g 60 -keyint_min 60 -sc_threshold 0 "
+         . "-r 30 -g 60 -keyint_min 60 -sc_threshold 0 "
          . "-c:a aac -b:a 128k -ar 44100 "
          . "-f flv -flvflags no_duration_filesize $ytUrlQ";
 
