@@ -118,6 +118,9 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
+    /* Cap height so the controls bar + footer stay visible without scrolling.
+       Header ~4.5rem + admin bar ~2.5rem + page padding ~1.5rem + meta bar ~2.5rem + footer ~2rem = ~13rem */
+    max-height: calc(100dvh - 13rem);
     background: #000;
     overflow: hidden;
 }
