@@ -55,10 +55,11 @@ wlog("Found cameras.conf at: $confFile");
 
 // ── Find FFmpeg ───────────────────────────────────────────────────────────
 $ffmpegCandidates = [
-    'C:\\Users\\funbucket\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1.2-full_build\\bin\\ffmpeg.exe',
-    'C:\\ffmpeg\\bin\\ffmpeg.exe',
-    'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-    'C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe',
+    // First check inside the streaming folder (within open_basedir)
+    __DIR__ . '\\ffmpeg.exe',
+    'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\ffmpeg.exe',
+    // Windows Temp is also allowed
+    'C:\\WINDOWS\\Temp\\ffmpeg.exe',
 ];
 
 $ffmpeg = null;
