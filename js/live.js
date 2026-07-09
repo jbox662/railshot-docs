@@ -131,21 +131,23 @@
     }
 
     // ── YouTube iframe player ────────────────────────────────────────────────
+    var YT_PARAMS = 'autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1';
+
     function buildEmbedUrl(youtubeUrl) {
         var embedUrl = youtubeUrl;
         // Handle full watch URLs: https://www.youtube.com/watch?v=ID
         var watchMatch = youtubeUrl.match(/[?&]v=([^&]+)/);
-        if (watchMatch) return 'https://www.youtube.com/embed/' + watchMatch[1] + '?autoplay=1&mute=1';
+        if (watchMatch) return 'https://www.youtube.com/embed/' + watchMatch[1] + '?' + YT_PARAMS;
         // Handle youtu.be/ID short URLs
         var shortMatch = youtubeUrl.match(/youtu\.be\/([^?&]+)/);
-        if (shortMatch) return 'https://www.youtube.com/embed/' + shortMatch[1] + '?autoplay=1&mute=1';
+        if (shortMatch) return 'https://www.youtube.com/embed/' + shortMatch[1] + '?' + YT_PARAMS;
         // Handle youtube.com/live/ID share URLs
         var liveShareMatch = youtubeUrl.match(/youtube\.com\/live\/([^?&]+)/);
-        if (liveShareMatch) return 'https://www.youtube.com/embed/' + liveShareMatch[1] + '?autoplay=1&mute=1';
+        if (liveShareMatch) return 'https://www.youtube.com/embed/' + liveShareMatch[1] + '?' + YT_PARAMS;
         // Handle already-formed embed URLs
         if (youtubeUrl.indexOf('/embed/') !== -1) {
             return youtubeUrl.indexOf('autoplay') === -1
-                ? youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1'
+                ? youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + YT_PARAMS
                 : youtubeUrl;
         }
         return embedUrl;

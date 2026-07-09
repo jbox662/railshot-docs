@@ -64,10 +64,11 @@ if (!$videoId && $apiKey !== '') {
 
 // ── Build response ────────────────────────────────────────────────────────────
 if ($videoId) {
+    $embedUrl = 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1';
     $result = [
         'ok'       => true,
         'videoId'  => $videoId,
-        'embedUrl' => 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1',
+        'embedUrl' => $embedUrl,
     ];
     file_put_contents($cacheFile, json_encode(array_merge($result, ['ts' => time()])));
     railshot_json_response($result);
