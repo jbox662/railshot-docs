@@ -409,6 +409,8 @@ function railshot_public_live_config(?string $venueId = null): array
         'tables' => $publicTables,
         'viewerLocked' => true,
         'activeTableId' => $activeTable['id'] ?? '',
+        'overlayEnabled' => !empty($venue['overlayEnabled']),
+        'overlayUrl' => $venue['overlayUrl'] ?? '',
     ]);
 }
 

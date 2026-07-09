@@ -78,6 +78,21 @@
                         '<label class="full-width">On-air camera (viewers see this) ' +
                             '<select data-venue-field="activeTableId" data-venue="' + venueIndex + '">' + tableOptionsHtml(tables, activeTableId) + '</select>' +
                         '</label>' +
+                        '<div class="admin-overlay-section">' +
+                            '<div class="admin-overlay-header">' +
+                                '<strong>Scoreboard Overlay</strong>' +
+                                '<label class="admin-toggle-label">' +
+                                    '<input type="checkbox" class="admin-overlay-toggle" data-venue-field="overlayEnabled" data-venue="' + venueIndex + '"' + (venue.overlayEnabled ? ' checked' : '') + '>' +
+                                    '<span class="admin-toggle-track"><span class="admin-toggle-thumb"></span></span>' +
+                                    '<span>' + (venue.overlayEnabled ? 'Enabled' : 'Disabled') + '</span>' +
+                                '</label>' +
+                            '</div>' +
+                            '<label class="full-width admin-overlay-url-label' + (venue.overlayEnabled ? '' : ' hidden') + '">' +
+                                'Overlay URL (Scoreholio or custom browser source)' +
+                                '<input data-venue-field="overlayUrl" data-venue="' + venueIndex + '" value="' + escapeHtml(venue.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...">' +
+                                '<span class="admin-field-hint">Paste your Scoreholio overlay URL here. Viewers will see it live on the stream.</span>' +
+                            '</label>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="admin-nested-header">' +
                         '<h4>Cameras / tables</h4>' +
@@ -175,6 +190,23 @@
                     }
                     fileInput.value = '';
                 }
+            });
+        });
+
+        // Overlay toggle — show/hide the URL input and update venues array
+        venuesContainer.querySelectorAll('.admin-overlay-toggle').forEach(function (toggle) {
+            toggle.addEventListener('change', function () {
+                var vi = Number(toggle.getAttribute('data-venue'));
+                venues[vi].overlayEnabled = toggle.checked;
+                var urlLabel = venuesContainer.querySelector('.admin-overlay-url-label[data-venue="' + vi + '"], .admin-overlay-url-label');
+                // Find the url label sibling within the same overlay section
+                var section = toggle.closest('.admin-overlay-section');
+                if (section) {
+                    var lbl = section.querySelector('.admin-overlay-url-label');
+                    if (lbl) lbl.classList.toggle('hidden', !toggle.checked);
+                }
+                var statusSpan = toggle.parentElement.querySelector('span:last-child');
+                if (statusSpan) statusSpan.textContent = toggle.checked ? 'Enabled' : 'Disabled';
             });
         });
 

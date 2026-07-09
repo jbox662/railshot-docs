@@ -61,6 +61,17 @@
                             <div class="overlay-spinner"></div>
                             <p id="overlayMessage">Loading stream…</p>
                         </div>
+                        <!-- Scoreboard overlay iframe — shown when overlayUrl is set in config -->
+                        <iframe
+                            id="scoreboardOverlay"
+                            class="scoreboard-overlay hidden"
+                            src=""
+                            frameborder="0"
+                            scrolling="no"
+                            allowtransparency="true"
+                            title="Live Scoreboard"
+                            aria-label="Live scoreboard overlay"
+                        ></iframe>
                     </div>
                     <div class="video-meta">
                         <h2 id="currentTableTitle">Live</h2>

@@ -243,6 +243,100 @@
     font-size: 0.85rem;
 }
 
+/* Scoreboard overlay section */
+.admin-overlay-section {
+    grid-column: 1 / -1;
+    background: rgba(0, 168, 232, 0.06);
+    border: 1px solid rgba(0, 168, 232, 0.2);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.admin-overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.admin-overlay-header strong {
+    color: var(--primary, #00A8E8);
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+}
+
+/* Toggle switch */
+.admin-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+}
+
+.admin-toggle-label input[type="checkbox"] {
+    display: none;
+}
+
+.admin-toggle-track {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 999px;
+    transition: background 0.25s ease;
+    flex-shrink: 0;
+}
+
+.admin-toggle-label input:checked + .admin-toggle-track {
+    background: var(--primary, #00A8E8);
+}
+
+.admin-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+
+.admin-toggle-label input:checked + .admin-toggle-track .admin-toggle-thumb {
+    transform: translateX(18px);
+}
+
+.admin-overlay-url-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: #b8c5d6;
+}
+
+.admin-overlay-url-label input {
+    width: 100%;
+    font-size: 0.85rem;
+}
+
+.admin-field-hint {
+    font-size: 0.78rem;
+    color: rgba(184, 197, 214, 0.65);
+    line-height: 1.4;
+}
+
+.admin-overlay-url-label.hidden {
+    display: none;
+}
+
 /* Venue image upload row */
 .admin-image-upload-row {
     display: flex;

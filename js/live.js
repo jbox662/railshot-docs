@@ -20,6 +20,7 @@
     const videoFitFullBtn = document.getElementById('videoFitFull');
     const liveLayoutEl = document.getElementById('liveLayout');
     const tablePanelEl = document.getElementById('tablePanel');
+    const scoreboardOverlayEl = document.getElementById('scoreboardOverlay');
 
     const VIDEO_FIT_KEY = 'railshot_video_fit';
     const CONFIG_POLL_MS = 20000;
@@ -358,6 +359,10 @@
         config.preferredProtocol = nextConfig.preferredProtocol;
         config.tables = nextConfig.tables;
         config.activeTableId = nextConfig.activeTableId;
+        // Update overlay settings from latest config poll
+        config.overlayEnabled = nextConfig.overlayEnabled;
+        config.overlayUrl = nextConfig.overlayUrl;
+        applyScoreboardOverlay();
 
         if (nextId && nextId !== currentTableId) {
             loadTable(nextTable);
@@ -398,6 +403,24 @@
         return window.RAILSHOT_LIVE_CONFIG || null;
     }
 
+    function applyScoreboardOverlay() {
+        if (!scoreboardOverlayEl) return;
+        var enabled = !!(config.overlayEnabled);
+        var url = (config.overlayUrl || '').trim();
+
+        if (enabled && url) {
+            // Only update src if it has changed to avoid reloading the iframe
+            if (scoreboardOverlayEl.src !== url) {
+                scoreboardOverlayEl.src = url;
+            }
+            scoreboardOverlayEl.classList.remove('hidden');
+        } else {
+            scoreboardOverlayEl.classList.add('hidden');
+            // Clear src when disabled so it doesn't keep polling Scoreholio
+            scoreboardOverlayEl.src = '';
+        }
+    }
+
     function applyVenueHeader() {
         const titleEl = document.getElementById('venueTitle');
         const eyebrowEl = document.getElementById('venueEyebrow');
@@ -424,7 +447,9 @@
         applyVenueHeader();
         buildTableList();
         initVideoFitControls();
+        applyScoreboardOverlay();
         startConfigPolling();
+
     }
 
     window.addEventListener('beforeunload', cleanupPlayer);

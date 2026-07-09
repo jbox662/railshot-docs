@@ -212,7 +212,35 @@
     to { transform: rotate(360deg); }
 }
 
-/* Retry button shown when stream is offline */
+/* ============================================================
+   SCOREBOARD OVERLAY IFRAME
+   ============================================================ */
+
+.scoreboard-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* Height is intentionally generous so the widget inside isn't clipped.
+       Scoreholio widget-a is roughly 120px tall; transparent background
+       means the empty space above it is invisible. */
+    height: 160px;
+    pointer-events: none;   /* let clicks pass through to the video controls */
+    background: transparent;
+    border: none;
+    z-index: 20;
+    transition: opacity 0.4s ease;
+}
+
+.scoreboard-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+    /* keep it in the DOM so the iframe src stays loaded */
+    visibility: hidden;
+}
+
+/* ============================================================
+   Retry button shown when stream is offline */
 .overlay-retry-btn {
     margin-top: 0.5rem;
     padding: 0.6rem 1.6rem;
