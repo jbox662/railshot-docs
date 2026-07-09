@@ -103,7 +103,7 @@ foreach ($lines as $line) {
 
     $cameraCount++;
     $streamLog = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\stream-' . $table . '.log';
-    $pidFile   = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "railshot-$table.pid";
+    $pidFile   = 'C:\\WINDOWS\\Temp\\railshot-' . $table . '.pid';
 
     wlog("Checking camera: $table");
 
