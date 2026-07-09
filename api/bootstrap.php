@@ -426,7 +426,9 @@ function railshot_public_live_config(?string $venueId = null): array
         ];
     }
 
-    $activeId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
+    // Use null sentinel to distinguish "never set" from "explicitly stopped"
+    $rawActiveId = $venue['activeTableId'] ?? null;
+    $activeId = $rawActiveId !== null ? railshot_sanitize_table_id($rawActiveId) : null;
     $activeTable = null;
     foreach ($allTables as $table) {
         if ($table['id'] === $activeId) {
@@ -434,7 +436,9 @@ function railshot_public_live_config(?string $venueId = null): array
             break;
         }
     }
-    if ($activeTable === null && $allTables !== []) {
+    // Only auto-select the first table when activeTableId was NEVER configured
+    // (null = brand-new venue). If it was explicitly set to '' (Stop Stream), stay off air.
+    if ($activeTable === null && $activeId === null && $allTables !== []) {
         $activeTable = $allTables[0];
     }
 
