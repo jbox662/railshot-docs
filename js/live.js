@@ -156,6 +156,11 @@
         if (shortMatch) {
             embedUrl = 'https://www.youtube.com/embed/' + shortMatch[1] + '?autoplay=1&mute=1';
         }
+        // Handle youtube.com/live/ID share URLs
+        var liveShareMatch = youtubeUrl.match(/youtube\.com\/live\/([^?&]+)/);
+        if (liveShareMatch) {
+            embedUrl = 'https://www.youtube.com/embed/' + liveShareMatch[1] + '?autoplay=1&mute=1';
+        }
         // Handle channel live stream: https://www.youtube.com/embed/live_stream?channel=ID
         if (youtubeUrl.indexOf('live_stream') !== -1 && youtubeUrl.indexOf('autoplay') === -1) {
             embedUrl = youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1';
