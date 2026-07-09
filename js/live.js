@@ -409,15 +409,24 @@
         var url = (config.overlayUrl || '').trim();
 
         if (enabled && url) {
-            // Only update src if it has changed to avoid reloading the iframe
-            if (scoreboardOverlayEl.src !== url) {
+            // Use a data attribute to track the last-set URL so we avoid
+            // comparing against the browser-normalized absolute src value
+            var lastUrl = scoreboardOverlayEl.getAttribute('data-overlay-src') || '';
+            if (lastUrl !== url) {
+                scoreboardOverlayEl.setAttribute('data-overlay-src', url);
                 scoreboardOverlayEl.src = url;
             }
+            // Make visible — remove hidden class AND force display/visibility
             scoreboardOverlayEl.classList.remove('hidden');
+            scoreboardOverlayEl.style.visibility = 'visible';
+            scoreboardOverlayEl.style.opacity = '1';
         } else {
             scoreboardOverlayEl.classList.add('hidden');
+            scoreboardOverlayEl.style.visibility = 'hidden';
+            scoreboardOverlayEl.style.opacity = '0';
             // Clear src when disabled so it doesn't keep polling Scoreholio
-            scoreboardOverlayEl.src = '';
+            scoreboardOverlayEl.removeAttribute('data-overlay-src');
+            scoreboardOverlayEl.src = 'about:blank';
         }
     }
 

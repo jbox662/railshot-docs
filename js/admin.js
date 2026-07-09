@@ -218,14 +218,19 @@
                 if (field === 'tables') {
                     const ti = Number(input.getAttribute('data-table'));
                     venues[vi].tables[ti][tableField] = input.value;
+                } else if (input.type === 'checkbox') {
+                    venues[vi][field] = input.checked;
                 } else {
                     venues[vi][field] = input.value;
                 }
             });
             input.addEventListener('change', function () {
-                if (input.getAttribute('data-venue-field') === 'activeTableId') {
-                    const vi = Number(input.getAttribute('data-venue'));
+                const vi = Number(input.getAttribute('data-venue'));
+                const field = input.getAttribute('data-venue-field');
+                if (field === 'activeTableId') {
                     venues[vi].activeTableId = input.value;
+                } else if (input.type === 'checkbox') {
+                    venues[vi][field] = input.checked;
                 }
             });
         });

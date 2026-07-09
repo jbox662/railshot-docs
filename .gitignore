@@ -1,0 +1,22 @@
+# ============================================================
+# RailShot TV — .gitignore
+# ============================================================
+# These paths contain LIVE SERVER DATA that must never be
+# overwritten by a git pull. They are created and managed
+# entirely on the VPS at runtime.
+# ============================================================
+
+# Live config (venues, overlay URLs, stream settings, admin password)
+App_Data/
+
+# Uploaded venue card images (created by admin/api/upload-image.php)
+images/venues/
+
+# PHP session files if stored locally
+/tmp/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

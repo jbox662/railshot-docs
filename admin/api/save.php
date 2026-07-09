@@ -57,6 +57,8 @@ if ($section === 'live') {
             'image' => trim($venue['image'] ?? '/images/logo.png') ?: '/images/logo.png',
             'activeTableId' => $activeTableId,
             'tables' => $tables,
+            'overlayEnabled' => !empty($venue['overlayEnabled']),
+            'overlayUrl' => trim($venue['overlayUrl'] ?? ''),
         ];
     }
 
