@@ -68,7 +68,7 @@ while IFS= read -r line; do
     nohup "$FFMPEG" \
         -loglevel warning \
         -rtsp_transport tcp \
-        -stimeout 10000000 \
+        -timeout 10000000 \
         -i "$RTSP_URL" \
         -c:v copy \
         -c:a aac \

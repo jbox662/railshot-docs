@@ -131,7 +131,7 @@ foreach ($lines as $line) {
     $ytUrlQ  = '"' . $ytUrl . '"';
     $logQ    = '"' . $streamLog . '"';
 
-    $cmd = "$ffmpegQ -loglevel warning -rtsp_transport tcp -stimeout 10000000 "
+    $cmd = "$ffmpegQ -loglevel warning -rtsp_transport tcp -timeout 10000000 "
          . "-i $rtspQ -c:v copy -c:a aac -b:a 128k -ar 44100 "
          . "-f flv -flvflags no_duration_filesize $ytUrlQ";
 

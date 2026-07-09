@@ -33,7 +33,7 @@ dlog("YouTube URL: $ytUrl");
 
 // Test 1: Can we reach the RTSP camera at all? (probe only, 10 sec timeout)
 dlog("--- Test 1: Probing RTSP camera (10 sec) ---");
-$probeCmd = '"' . $ffmpeg . '" -loglevel verbose -rtsp_transport tcp -stimeout 10000000 -i "' . $rtsp . '" -t 5 -f null - 2>&1';
+$probeCmd = '"' . $ffmpeg . '" -loglevel verbose -rtsp_transport tcp -timeout 10000000 -i "' . $rtsp . '" -t 5 -f null - 2>&1';
 dlog("Running: $probeCmd");
 exec($probeCmd, $probeOut, $probeRet);
 dlog("Exit code: $probeRet");
