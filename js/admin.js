@@ -1,7 +1,6 @@
 (function () {
     const messageEl = document.getElementById('adminMessage');
     const venuesContainer = document.getElementById('venuesContainer');
-    const mediamtxYamlEl = document.getElementById('mediamtxYaml');
     let venues = Array.isArray(window.RAILSHOT_ADMIN_VENUES) ? window.RAILSHOT_ADMIN_VENUES : [];
 
     function showMessage(text, isError) {
@@ -47,9 +46,8 @@
                             '<label>Path ID <input data-venue-field="tables" data-table-field="id" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
                             '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
                             '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
-                            '<label class="full-width">RTSP URL (for self-hosted MediaMTX cameras) <input data-venue-field="tables" data-table-field="rtspUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.rtspUrl || '') + '" placeholder="rtsp://192.168.1.x:554/stream"></label>' +
                             '<label class="full-width">YouTube Live URL <input data-venue-field="tables" data-table-field="youtubeUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeUrl || '') + '" placeholder="https://www.youtube.com/watch?v=VIDEO_ID or channel embed URL">' +
-                                '<span class="admin-field-hint">If set, this table will use YouTube Live instead of the self-hosted camera. Paste any YouTube live URL — watch URL, short URL, or embed URL all work.</span>' +
+                                '<span class="admin-field-hint">Paste any YouTube live URL — watch URL, short URL, or embed URL all work.</span>' +
                             '</label>' +
                             '<label class="full-width">Scoreholio Overlay URL (for this table)' +
                                 '<input data-venue-field="tables" data-table-field="overlayUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...&amp;court=' + (tableIndex + 1) + '">' +
@@ -135,7 +133,8 @@
                     id: 'table' + next,
                     name: 'Table ' + next,
                     description: '',
-                    rtspUrl: ''
+                    youtubeUrl: '',
+                    overlayUrl: ''
                 });
                 renderVenues();
             });
@@ -205,8 +204,6 @@
             toggle.addEventListener('change', function () {
                 var vi = Number(toggle.getAttribute('data-venue'));
                 venues[vi].overlayEnabled = toggle.checked;
-                var urlLabel = venuesContainer.querySelector('.admin-overlay-url-label[data-venue="' + vi + '"], .admin-overlay-url-label');
-                // Find the url label sibling within the same overlay section
                 var section = toggle.closest('.admin-overlay-section');
                 if (section) {
                     var lbl = section.querySelector('.admin-overlay-url-label');
@@ -258,13 +255,8 @@
     }
 
     function readLiveForm() {
-        const form = document.getElementById('liveForm');
-        const data = new FormData(form);
         return {
             section: 'live',
-            mediamtxHost: data.get('mediamtxHost'),
-            preferredProtocol: data.get('preferredProtocol'),
-            useHttpsProxy: form.querySelector('[name="useHttpsProxy"]').checked,
             landing: readLandingForm(),
             venues: venues
         };
@@ -342,7 +334,8 @@
                 id: 'table1',
                 name: 'Table 1',
                 description: '',
-                rtspUrl: ''
+                youtubeUrl: '',
+                overlayUrl: ''
             }]
         });
         renderVenues();
@@ -350,10 +343,7 @@
 
     document.getElementById('saveLiveBtn')?.addEventListener('click', async function () {
         try {
-            const result = await postSave(readLiveForm());
-            if (result.mediamtxYaml && mediamtxYamlEl) {
-                mediamtxYamlEl.value = result.mediamtxYaml;
-            }
+            await postSave(readLiveForm());
             showMessage('Live settings saved. Venues updated on live.html.');
         } catch (err) {
             showMessage(err.message, true);
@@ -384,13 +374,6 @@
         } catch (err) {
             showMessage(err.message, true);
         }
-    });
-
-    document.getElementById('copyYamlBtn')?.addEventListener('click', function () {
-        if (!mediamtxYamlEl) return;
-        navigator.clipboard.writeText(mediamtxYamlEl.value).then(function () {
-            showMessage('MediaMTX YAML copied to clipboard.');
-        });
     });
 
     renderVenues();

@@ -1,6 +1,7 @@
 /**
  * RailShot TV — Live Tables player
- * Loads config from /api/live-config.php (admin-managed), with JS fallback.
+ * Loads config from /api/live-config.php (admin-managed).
+ * Streams via YouTube Live iframe embed only.
  */
 
 (function () {
@@ -24,19 +25,10 @@
 
     const VIDEO_FIT_KEY = 'railshot_video_fit';
     const CONFIG_POLL_MS = 20000;
-    const STREAM_TIMEOUT_MS = 12000; // Show offline message after 12 seconds
 
     let config = null;
     let currentTableId = null;
-    let currentReader = null;
-    let currentHls = null;
-    let usingFallback = false;
-    let streamTimeoutId = null;
     let currentTable = null;
-
-    function stripTrailingSlash(url) {
-        return String(url || '').replace(/\/+$/, '');
-    }
 
     function setStatus(state, text) {
         if (statusEl) {
@@ -52,7 +44,6 @@
         if (overlayMsgEl) overlayMsgEl.textContent = message;
         if (spinnerEl) spinnerEl.classList.toggle('is-idle', !!idle);
 
-        // Remove any existing retry button first
         var existingRetry = overlayEl.querySelector('.overlay-retry-btn');
         if (existingRetry) existingRetry.remove();
 
@@ -62,7 +53,6 @@
             retryBtn.className = 'overlay-retry-btn';
             retryBtn.textContent = 'Retry';
             retryBtn.addEventListener('click', function () {
-                clearStreamTimeout();
                 loadTable(currentTable);
             });
             overlayEl.appendChild(retryBtn);
@@ -127,133 +117,66 @@
         protocolBadgeEl.classList.remove('hidden');
     }
 
-    function clearStreamTimeout() {
-        if (streamTimeoutId) {
-            clearTimeout(streamTimeoutId);
-            streamTimeoutId = null;
-        }
-    }
-
-    function startStreamTimeout(table) {
-        clearStreamTimeout();
-        streamTimeoutId = setTimeout(function () {
-            // Only fire if we are still in a connecting state
-            if (statusEl && statusEl.classList.contains('is-connecting')) {
-                setStatus('error', 'Stream offline');
-                showOverlay('The stream is currently offline. Please check back later.', true, true);
-                setProtocolBadge('');
-            }
-        }, STREAM_TIMEOUT_MS);
-    }
-
     function cleanupPlayer() {
-        if (currentReader) {
-            try { currentReader.close(); } catch (err) { console.warn('WebRTC close error:', err); }
-            currentReader = null;
-        }
-        if (currentHls) {
-            try { currentHls.destroy(); } catch (err) { console.warn('HLS destroy error:', err); }
-            currentHls = null;
+        var videoWrapper = videoEl ? videoEl.parentElement : null;
+        if (videoWrapper) {
+            var oldYt = videoWrapper.querySelector('.yt-live-iframe');
+            if (oldYt) oldYt.remove();
+            videoEl.style.display = '';
         }
         if (videoEl) {
             videoEl.removeAttribute('src');
-            videoEl.srcObject = null;
             videoEl.load();
         }
     }
 
-    function isPlaceholderHost(url) {
-        return !url || /YOUR_SERVER/i.test(url);
-    }
+    // ── YouTube iframe player ────────────────────────────────────────────────
+    function loadStreamYouTube(table) {
+        const youtubeUrl = table.youtubeUrl || '';
+        const videoWrapper = videoEl ? videoEl.parentElement : null;
+        if (!videoWrapper) return;
 
-    function loadStreamHls(table) {
-        const base = stripTrailingSlash(config.hlsBaseUrl);
-        const hlsUrl = base.indexOf('?path=') !== -1
-            ? base + table.id + '/index.m3u8'
-            : base + '/' + table.id + '/index.m3u8';
+        // Hide the native <video> element — YouTube uses an iframe
+        videoEl.style.display = 'none';
 
-        usingFallback = true;
-        setProtocolBadge('HLS');
-        setStatus('connecting', 'Connecting to ' + table.name + '…');
-        showOverlay('Connecting to ' + table.name + '…');
-        startStreamTimeout(table);
+        // Remove any existing YouTube iframe
+        var existingYt = videoWrapper.querySelector('.yt-live-iframe');
+        if (existingYt) existingYt.remove();
 
-        if (window.Hls && Hls.isSupported()) {
-            currentHls = new Hls({ enableWorker: true, lowLatencyMode: true });
-            currentHls.loadSource(hlsUrl);
-            currentHls.attachMedia(videoEl);
-            currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
-                clearStreamTimeout();
-                videoEl.play().catch(function () {});
-                hideOverlay();
-                setStatus('live', 'Live · ' + table.name);
-            });
-            currentHls.on(Hls.Events.ERROR, function (_event, data) {
-                if (data.fatal) {
-                    clearStreamTimeout();
-                    setStatus('error', 'Stream offline');
-                    showOverlay('The stream is currently offline. Please check back later.', true, true);
-                    setProtocolBadge('');
-                }
-            });
-            return;
+        // Build a clean embeddable URL
+        var embedUrl = youtubeUrl;
+
+        // Handle full watch URLs: https://www.youtube.com/watch?v=ID
+        var watchMatch = youtubeUrl.match(/[?&]v=([^&]+)/);
+        if (watchMatch) {
+            embedUrl = 'https://www.youtube.com/embed/' + watchMatch[1] + '?autoplay=1&mute=1';
+        }
+        // Handle youtu.be/ID short URLs
+        var shortMatch = youtubeUrl.match(/youtu\.be\/([^?&]+)/);
+        if (shortMatch) {
+            embedUrl = 'https://www.youtube.com/embed/' + shortMatch[1] + '?autoplay=1&mute=1';
+        }
+        // Handle channel live stream: https://www.youtube.com/embed/live_stream?channel=ID
+        if (youtubeUrl.indexOf('live_stream') !== -1 && youtubeUrl.indexOf('autoplay') === -1) {
+            embedUrl = youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1';
+        }
+        // Handle already-formed embed URLs
+        if (youtubeUrl.indexOf('/embed/') !== -1 && youtubeUrl.indexOf('autoplay') === -1) {
+            embedUrl = youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1';
         }
 
-        if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-            videoEl.src = hlsUrl;
-            videoEl.addEventListener('loadedmetadata', function onMeta() {
-                videoEl.removeEventListener('loadedmetadata', onMeta);
-                clearStreamTimeout();
-                videoEl.play().catch(function () {});
-                hideOverlay();
-                setStatus('live', 'Live · ' + table.name);
-            });
-            return;
-        }
+        var iframe = document.createElement('iframe');
+        iframe.className = 'yt-live-iframe';
+        iframe.src = embedUrl;
+        iframe.setAttribute('frameborder', '0');
+        iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
+        iframe.setAttribute('allowfullscreen', 'true');
+        iframe.setAttribute('title', 'Live: ' + table.name);
+        videoWrapper.insertBefore(iframe, videoWrapper.firstChild);
 
-        clearStreamTimeout();
-        setStatus('error', 'Playback not supported');
-        showOverlay('This browser cannot play the live stream.', true);
-    }
-
-    function loadStreamWebRtc(table) {
-        if (typeof MediaMTXWebRTCReader === 'undefined') {
-            loadStreamHls(table);
-            return;
-        }
-
-        const base = stripTrailingSlash(config.webrtcBaseUrl);
-        const whepUrl = base.indexOf('?path=') !== -1
-            ? base + table.id + '/whep'
-            : base + '/' + table.id + '/whep';
-
-        usingFallback = false;
-        setProtocolBadge('WebRTC');
-        setStatus('connecting', 'Connecting to ' + table.name + '…');
-        showOverlay('Connecting to ' + table.name + '…');
-        startStreamTimeout(table);
-
-        currentReader = new MediaMTXWebRTCReader({
-            url: whepUrl,
-            onError: function (err) {
-                console.warn('WebRTC error, falling back to HLS:', err);
-                if (!usingFallback) {
-                    clearStreamTimeout();
-                    cleanupPlayer();
-                    loadStreamHls(table);
-                }
-            },
-            onTrack: function (evt) {
-                if (evt.streams && evt.streams[0]) {
-                    clearStreamTimeout();
-                    videoEl.srcObject = evt.streams[0];
-                    videoEl.play().catch(function () {});
-                    hideOverlay();
-                    setStatus('live', 'Live · ' + table.name);
-                    setProtocolBadge('WebRTC');
-                }
-            }
-        });
+        hideOverlay();
+        setStatus('live', 'Live \u00b7 ' + table.name);
+        setProtocolBadge('YouTube');
     }
 
     function loadTable(table) {
@@ -278,18 +201,16 @@
 
         cleanupPlayer();
 
-        if (isPlaceholderHost(config.webrtcBaseUrl) && isPlaceholderHost(config.hlsBaseUrl)) {
-            setStatus('error', 'Server not configured');
-            showOverlay('Configure cameras in the RailShot admin panel.', true);
-            setProtocolBadge('');
+        // YouTube path: if the table has a youtubeUrl, use the iframe player
+        if (table.youtubeUrl && table.youtubeUrl.trim() !== '') {
+            loadStreamYouTube(table);
             return;
         }
 
-        if (String(config.preferredProtocol || '').toLowerCase() === 'hls') {
-            loadStreamHls(table);
-        } else {
-            loadStreamWebRtc(table);
-        }
+        // No stream configured
+        setStatus('error', 'Stream not configured');
+        showOverlay('No YouTube Live URL is set for this table. Configure it in the admin panel.', true);
+        setProtocolBadge('');
     }
 
     function buildTableList() {
@@ -323,11 +244,8 @@
             btn.dataset.stream = table.id;
             btn.setAttribute('role', 'option');
             btn.setAttribute('aria-selected', 'false');
-            btn.innerHTML =
-                '<span class="table-item-name"></span>' +
-                '';
+            btn.innerHTML = '<span class="table-item-name"></span>';
             btn.querySelector('.table-item-name').textContent = table.name;
-            // Do not render description in sidebar — may contain camera IP
 
             btn.addEventListener('click', function () { loadTable(table); });
             li.appendChild(btn);
@@ -360,12 +278,8 @@
         const nextTable = nextConfig.tables[0];
         const nextId = nextTable ? nextTable.id : null;
 
-        config.webrtcBaseUrl = nextConfig.webrtcBaseUrl;
-        config.hlsBaseUrl = nextConfig.hlsBaseUrl;
-        config.preferredProtocol = nextConfig.preferredProtocol;
         config.tables = nextConfig.tables;
         config.activeTableId = nextConfig.activeTableId;
-        // Update overlay settings from latest config poll
         config.overlayEnabled = nextConfig.overlayEnabled;
         config.overlayUrl = nextConfig.overlayUrl;
         applyScoreboardOverlay();
@@ -404,9 +318,9 @@
                 return await response.json();
             }
         } catch (err) {
-            console.warn('API config unavailable, using fallback:', err);
+            console.warn('API config unavailable:', err);
         }
-        return window.RAILSHOT_LIVE_CONFIG || null;
+        return null;
     }
 
     function applyScoreboardOverlay() {
@@ -415,14 +329,11 @@
         var url = (config.overlayUrl || '').trim();
 
         if (enabled && url) {
-            // Use a data attribute to track the last-set URL so we avoid
-            // comparing against the browser-normalized absolute src value
             var lastUrl = scoreboardOverlayEl.getAttribute('data-overlay-src') || '';
             if (lastUrl !== url) {
                 scoreboardOverlayEl.setAttribute('data-overlay-src', url);
                 scoreboardOverlayEl.src = url;
             }
-            // Make visible — remove hidden class AND force display/visibility
             scoreboardOverlayEl.classList.remove('hidden');
             scoreboardOverlayEl.style.visibility = 'visible';
             scoreboardOverlayEl.style.opacity = '1';
@@ -430,7 +341,6 @@
             scoreboardOverlayEl.classList.add('hidden');
             scoreboardOverlayEl.style.visibility = 'hidden';
             scoreboardOverlayEl.style.opacity = '0';
-            // Clear src when disabled so it doesn't keep polling Scoreholio
             scoreboardOverlayEl.removeAttribute('data-overlay-src');
             scoreboardOverlayEl.src = 'about:blank';
         }
@@ -467,7 +377,6 @@
 
         if (!adminData || !adminData.isAdmin) return;
 
-        // Show the switcher bar
         switcherEl.classList.remove('hidden');
 
         function renderBtns(activeId) {
@@ -480,9 +389,8 @@
                 btn.dataset.tableId = t.id;
                 btn.addEventListener('click', async function () {
                     if (btn.disabled) return;
-                    // Disable all buttons while switching
                     btnsEl.querySelectorAll('.admin-switcher-btn').forEach(function (b) { b.disabled = true; });
-                    if (statusSpan) statusSpan.textContent = 'Switching…';
+                    if (statusSpan) statusSpan.textContent = 'Switching\u2026';
                     try {
                         const r = await fetch('/api/admin-live.php', {
                             method: 'POST',
@@ -491,14 +399,12 @@
                         });
                         const result = await r.json();
                         if (result.ok) {
-                            // Update active state locally and reload stream
                             adminData.tables.forEach(function (tbl) {
                                 if (tbl.id === t.id && tbl.overlayUrl) {
                                     config.overlayUrl = tbl.overlayUrl;
                                 }
                             });
                             renderBtns(t.id);
-                            // Reload the config so the stream switches
                             config = await loadConfig();
                             buildTableList();
                             applyScoreboardOverlay();
@@ -534,7 +440,6 @@
         applyScoreboardOverlay();
         initAdminSwitcher();
         startConfigPolling();
-
     }
 
     window.addEventListener('beforeunload', cleanupPlayer);

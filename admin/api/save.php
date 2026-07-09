@@ -38,7 +38,6 @@ if ($section === 'live') {
                 'id' => $id,
                 'name' => $name,
                 'description' => trim($table['description'] ?? ''),
-                'rtspUrl' => trim($table['rtspUrl'] ?? ''),
                 'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
                 'overlayUrl' => trim($table['overlayUrl'] ?? ''),
             ];
@@ -74,11 +73,6 @@ if ($section === 'live') {
     }
 
     $config['live'] = [
-        'mediamtxHost' => trim($body['mediamtxHost'] ?? '160.153.184.255'),
-        'useHttpsProxy' => !empty($body['useHttpsProxy']),
-        'preferredProtocol' => in_array($body['preferredProtocol'] ?? '', ['hls', 'webrtc'], true)
-            ? $body['preferredProtocol']
-            : 'hls',
         'landing' => [
             'headline' => trim($landing['headline'] ?? ''),
             'subtitle' => trim($landing['subtitle'] ?? ''),
@@ -91,10 +85,7 @@ if ($section === 'live') {
         railshot_json_response(['error' => 'Failed to save config'], 500);
     }
 
-    railshot_json_response([
-        'ok' => true,
-        'mediamtxYaml' => railshot_generate_mediamtx_yaml(railshot_collect_all_tables($config['live'])),
-    ]);
+    railshot_json_response(['ok' => true]);
 }
 
 if ($section === 'site') {

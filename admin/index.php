@@ -13,7 +13,6 @@ $live = $config['live'] ?? [];
 $site = $config['site'] ?? [];
 $landing = $live['landing'] ?? railshot_default_config()['live']['landing'];
 $venues = railshot_normalize_venues($live);
-$mediamtxYaml = railshot_generate_mediamtx_yaml(railshot_collect_all_tables($live));
 $landingBullets = implode("\n", $landing['bullets'] ?? []);
 ?>
 <!DOCTYPE html>
@@ -52,25 +51,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
                 </label>
                 <label class="full-width">Bullet points (one per line)
                     <textarea name="bullets" rows="4" placeholder="Feature one&#10;Feature two"><?= htmlspecialchars($landingBullets) ?></textarea>
-                </label>
-            </form>
-        </section>
-
-        <section class="admin-panel">
-            <h2>Streaming server</h2>
-            <form id="liveForm" class="admin-form-grid">
-                <label>MediaMTX host (VPS IP)
-                    <input type="text" name="mediamtxHost" value="<?= htmlspecialchars($live['mediamtxHost'] ?? '') ?>" required>
-                </label>
-                <label>Preferred protocol
-                    <select name="preferredProtocol">
-                        <option value="hls" <?= ($live['preferredProtocol'] ?? '') === 'hls' ? 'selected' : '' ?>>HLS (best for HTTPS site)</option>
-                        <option value="webrtc" <?= ($live['preferredProtocol'] ?? '') === 'webrtc' ? 'selected' : '' ?>>WebRTC (lower latency)</option>
-                    </select>
-                </label>
-                <label class="admin-checkbox full-width">
-                    <input type="checkbox" name="useHttpsProxy" <?= !empty($live['useHttpsProxy']) ? 'checked' : '' ?>>
-                    Use HTTPS proxy on production (<code>/api/hls.php</code>, <code>/api/webrtc.php</code>)
                 </label>
             </form>
         </section>
@@ -115,15 +95,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         </section>
 
         <section class="admin-panel">
-            <h2>MediaMTX paths (copy to VPS)</h2>
-            <p class="admin-hint">After saving cameras, copy paths into <code>mediamtx.yml</code> on your VPS (or use <code>pull-table1.bat</code> per table).</p>
-            <textarea id="mediamtxYaml" class="admin-code" rows="12" readonly><?= htmlspecialchars($mediamtxYaml) ?></textarea>
-            <div class="admin-actions">
-                <button type="button" id="copyYamlBtn" class="btn btn-secondary">Copy YAML</button>
-            </div>
-        </section>
-
-        <section class="admin-panel">
             <h2>Venue Operator PIN</h2>
             <p class="admin-hint">Set a short PIN for venue staff to use on the <a href="/golive.html" target="_blank">Go Live page</a>. Staff can switch cameras and start/stop streams without accessing the full admin panel.</p>
             <form id="operatorPinForm" class="admin-form-grid admin-form-narrow">
@@ -158,6 +129,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         window.RAILSHOT_ADMIN_LANDING = <?= json_encode($landing, JSON_UNESCAPED_SLASHES) ?>;
         window.RAILSHOT_ADMIN_VENUES = <?= json_encode($venues, JSON_UNESCAPED_SLASHES) ?>;
     </script>
-    <script src="/js/admin.js?v=2"></script>
+    <script src="/js/admin.js?v=3"></script>
 </body>
 </html>

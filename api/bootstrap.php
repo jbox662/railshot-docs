@@ -25,9 +25,6 @@ function railshot_default_config(): array
 {
     return [
         'live' => [
-            'mediamtxHost' => '160.153.184.255',
-            'useHttpsProxy' => true,
-            'preferredProtocol' => 'hls',
             'landing' => [
                 'headline' => 'Watch Live Billiard Action',
                 'subtitle' => 'Stream tournament tables, league nights, and hall favorites from venues powered by RailShot TV — free for viewers, professional quality for operators.',
@@ -49,16 +46,14 @@ function railshot_default_config(): array
                     'tables' => [
                         [
                             'id' => 'table1',
-                            'name' => 'Test Camera',
-                            'description' => '192.168.68.89',
-                            'rtspUrl' => 'rtsp://admin:CHANGE_ME@140.106.76.67:8554/h264Preview_01_main',
+                            'name' => 'Table 1',
+                            'description' => '',
+                            'youtubeUrl' => '',
+                            'overlayUrl' => '',
                         ],
                     ],
                 ],
             ],
-            // Legacy fields kept for migration from older configs:
-            'activeTableId' => 'table1',
-            'tables' => [],
         ],
         'site' => [
             'heroTitle' => 'Professional Billiard Livestreaming',
@@ -265,29 +260,6 @@ function railshot_json_response(array $data, int $code = 200): void
     exit;
 }
 
-function railshot_build_live_urls(array $liveConfig): array
-{
-    $host = trim($liveConfig['mediamtxHost'] ?? '160.153.184.255');
-    $useProxy = !empty($liveConfig['useHttpsProxy']);
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-
-    if ($useProxy && $isHttps && !empty($_SERVER['HTTP_HOST'])) {
-        $origin = 'https://' . $_SERVER['HTTP_HOST'];
-        return [
-            'webrtcBaseUrl' => $origin . '/api/webrtc.php?path=',
-            'hlsBaseUrl' => $origin . '/api/hls.php?path=',
-            'preferredProtocol' => $liveConfig['preferredProtocol'] ?? 'hls',
-        ];
-    }
-
-    return [
-        'webrtcBaseUrl' => 'http://' . $host . ':8889',
-        'hlsBaseUrl' => 'http://' . $host . ':8888',
-        'preferredProtocol' => $liveConfig['preferredProtocol'] ?? 'webrtc',
-    ];
-}
-
 function railshot_sanitize_venue_id(string $id): string
 {
     $id = strtolower(trim($id));
@@ -427,7 +399,6 @@ function railshot_public_live_config(?string $venueId = null): array
 {
     $config = railshot_load_config();
     $live = $config['live'] ?? [];
-    $urls = railshot_build_live_urls($live);
 
     $venues = railshot_normalize_venues($live);
     $venue = null;
@@ -474,7 +445,7 @@ function railshot_public_live_config(?string $venueId = null): array
         ? $activeTable['overlayUrl']
         : trim($venue['overlayUrl'] ?? '');
 
-    return array_merge($urls, [
+    return [
         'venueId' => $venue['id'] ?? '',
         'venueName' => $venue['name'] ?? '',
         'tables' => $publicTables,
@@ -482,7 +453,7 @@ function railshot_public_live_config(?string $venueId = null): array
         'activeTableId' => $activeTable['id'] ?? '',
         'overlayEnabled' => !empty($venue['overlayEnabled']),
         'overlayUrl' => $activeOverlayUrl,
-    ]);
+    ];
 }
 
 function railshot_sanitize_table_id(string $id): string
@@ -490,23 +461,6 @@ function railshot_sanitize_table_id(string $id): string
     $id = strtolower(trim($id));
     $id = preg_replace('/[^a-z0-9_-]+/', '', $id) ?? '';
     return $id;
-}
-
-function railshot_generate_mediamtx_yaml(array $tables): string
-{
-    $lines = ["paths:"];
-    foreach ($tables as $table) {
-        $id = railshot_sanitize_table_id($table['id'] ?? '');
-        $rtsp = trim($table['rtspUrl'] ?? '');
-        if ($id === '' || $rtsp === '') {
-            continue;
-        }
-        $lines[] = "  {$id}:";
-        $lines[] = "    source: {$rtsp}";
-        $lines[] = "    sourceOnDemand: yes";
-        $lines[] = "";
-    }
-    return implode("\n", $lines) . "\n";
 }
 
 function railshot_read_json_body(): array
