@@ -195,6 +195,67 @@ function railshot_logout(): void
     unset($_SESSION['railshot_admin']);
 }
 
+// ── Venue Operator PIN auth ───────────────────────────────────────────────────
+
+define('RAILSHOT_OPERATOR_FILE', RAILSHOT_DATA . DIRECTORY_SEPARATOR . 'operator.json');
+
+function railshot_operator_exists(): bool
+{
+    return file_exists(RAILSHOT_OPERATOR_FILE);
+}
+
+function railshot_load_operator(): ?array
+{
+    if (!railshot_operator_exists()) {
+        return null;
+    }
+    $data = json_decode(file_get_contents(RAILSHOT_OPERATOR_FILE) ?: '', true);
+    return is_array($data) ? $data : null;
+}
+
+function railshot_save_operator(string $pin): bool
+{
+    railshot_ensure_data_dir();
+    $payload = [
+        'pinHash' => password_hash($pin, PASSWORD_DEFAULT),
+        'updatedAt' => gmdate('c'),
+    ];
+    return file_put_contents(
+        RAILSHOT_OPERATOR_FILE,
+        json_encode($payload, JSON_PRETTY_PRINT)
+    ) !== false;
+}
+
+function railshot_attempt_operator_login(string $pin): bool
+{
+    $op = railshot_load_operator();
+    if (!$op) {
+        return false;
+    }
+    if (!password_verify($pin, $op['pinHash'] ?? '')) {
+        return false;
+    }
+    $_SESSION['railshot_operator'] = true;
+    return true;
+}
+
+function railshot_is_operator_logged_in(): bool
+{
+    return !empty($_SESSION['railshot_operator']) || !empty($_SESSION['railshot_admin']);
+}
+
+function railshot_operator_logout(): void
+{
+    unset($_SESSION['railshot_operator']);
+}
+
+function railshot_require_operator_api(): void
+{
+    if (!railshot_is_operator_logged_in()) {
+        railshot_json_response(['error' => 'Unauthorized'], 401);
+    }
+}
+
 function railshot_json_response(array $data, int $code = 200): void
 {
     http_response_code($code);
@@ -388,6 +449,7 @@ function railshot_public_live_config(?string $venueId = null): array
         $allTables[] = [
             'id' => $table['id'],
             'name' => $table['name'],
+            'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
             'overlayUrl' => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
             // description intentionally omitted — it often contains the camera IP
         ];

@@ -47,7 +47,10 @@
                             '<label>Path ID <input data-venue-field="tables" data-table-field="id" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
                             '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
                             '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
-                            '<label class="full-width">RTSP URL <input data-venue-field="tables" data-table-field="rtspUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.rtspUrl || '') + '"></label>' +
+                            '<label class="full-width">RTSP URL (for self-hosted MediaMTX cameras) <input data-venue-field="tables" data-table-field="rtspUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.rtspUrl || '') + '" placeholder="rtsp://192.168.1.x:554/stream"></label>' +
+                            '<label class="full-width">YouTube Live URL <input data-venue-field="tables" data-table-field="youtubeUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeUrl || '') + '" placeholder="https://www.youtube.com/watch?v=VIDEO_ID or channel embed URL">' +
+                                '<span class="admin-field-hint">If set, this table will use YouTube Live instead of the self-hosted camera. Paste any YouTube live URL — watch URL, short URL, or embed URL all work.</span>' +
+                            '</label>' +
                             '<label class="full-width">Scoreholio Overlay URL (for this table)' +
                                 '<input data-venue-field="tables" data-table-field="overlayUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...&amp;court=' + (tableIndex + 1) + '">' +
                                 '<span class="admin-field-hint">Leave blank to use the venue-level overlay URL. Set this to override with a table-specific scoreboard (e.g. court=' + (tableIndex + 1) + ').</span>' +
@@ -300,6 +303,30 @@
         }
         return result;
     }
+
+    // Operator PIN save
+    document.getElementById('saveOperatorPinBtn')?.addEventListener('click', async function () {
+        var form = document.getElementById('operatorPinForm');
+        var newPin = form.querySelector('[name="newPin"]').value.trim();
+        var confirmPin = form.querySelector('[name="confirmPin"]').value.trim();
+        if (!newPin) { showMessage('Please enter a PIN.', true); return; }
+        if (newPin !== confirmPin) { showMessage('PINs do not match.', true); return; }
+        if (newPin.length < 4) { showMessage('PIN must be at least 4 digits.', true); return; }
+        try {
+            var res = await fetch('/api/operator-set-pin.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ newPin: newPin, confirmPin: confirmPin })
+            });
+            var result = await res.json();
+            if (!res.ok || !result.ok) throw new Error(result.error || 'Save failed');
+            showMessage('Operator PIN updated successfully.');
+            form.reset();
+        } catch (err) {
+            showMessage('Error: ' + err.message, true);
+        }
+    });
 
     document.getElementById('addVenueBtn')?.addEventListener('click', function () {
         const next = venues.length + 1;

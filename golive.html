@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Go Live — RailShot TV</title>
+    <meta name="theme-color" content="#00A8E8">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css?v=2">
+    <link rel="stylesheet" href="css/golive.css?v=1">
+</head>
+<body class="golive-page">
+
+    <!-- PIN Login Screen -->
+    <div id="pinScreen" class="pin-screen">
+        <div class="pin-card">
+            <img src="images/logo.png" alt="RailShot TV" class="pin-logo">
+            <h1 class="pin-title">RailShot TV</h1>
+            <p class="pin-subtitle">Venue Operator Login</p>
+            <form id="pinForm" autocomplete="off">
+                <div class="pin-input-wrap">
+                    <input
+                        type="password"
+                        id="pinInput"
+                        class="pin-input"
+                        placeholder="Enter PIN"
+                        inputmode="numeric"
+                        maxlength="12"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary pin-submit-btn">Sign In</button>
+                <p id="pinError" class="pin-error hidden">Incorrect PIN. Please try again.</p>
+            </form>
+            <a href="admin/" class="pin-admin-link">Full Admin Panel &rarr;</a>
+        </div>
+    </div>
+
+    <!-- Go Live Control Screen -->
+    <div id="controlScreen" class="control-screen hidden">
+        <header class="golive-header">
+            <div class="golive-header-inner">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="RailShot TV Logo" class="logo-icon">
+                    <span>RailShot TV</span>
+                </a>
+                <div class="golive-header-right">
+                    <span id="venueName" class="golive-venue-name"></span>
+                    <button id="logoutBtn" class="btn btn-secondary btn-small">Sign Out</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="golive-main">
+            <div class="golive-container">
+
+                <!-- Status banner -->
+                <div id="statusBanner" class="status-banner status-offline">
+                    <span class="status-banner-dot"></span>
+                    <span id="statusBannerText">Off Air</span>
+                </div>
+
+                <!-- Table cards -->
+                <div id="tableCards" class="table-cards-grid"></div>
+
+                <!-- No tables configured message -->
+                <div id="noTablesMsg" class="no-tables-msg hidden">
+                    <p>No cameras have been configured yet.</p>
+                    <a href="admin/" class="btn btn-primary">Go to Admin Panel</a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/golive.js?v=1"></script>
+</body>
+</html>

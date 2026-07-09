@@ -1,0 +1,362 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   RailShot TV — Go Live / Venue Operator Page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --gl-bg: #0d0f14;
+    --gl-card-bg: #161a22;
+    --gl-border: rgba(255,255,255,0.08);
+    --gl-blue: #00A8E8;
+    --gl-blue-dark: #0086c3;
+    --gl-green: #22c55e;
+    --gl-green-dark: #16a34a;
+    --gl-red: #ef4444;
+    --gl-red-dark: #dc2626;
+    --gl-text: #f0f4f8;
+    --gl-muted: #8899aa;
+    --gl-radius: 14px;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+.golive-page {
+    background: var(--gl-bg);
+    min-height: 100vh;
+    color: var(--gl-text);
+    font-family: inherit;
+}
+
+/* ── PIN Screen ───────────────────────────────────────────────────────────── */
+.pin-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.pin-card {
+    background: var(--gl-card-bg);
+    border: 1px solid var(--gl-border);
+    border-radius: var(--gl-radius);
+    padding: 48px 40px 40px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+.pin-logo {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+
+.pin-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--gl-text);
+}
+
+.pin-subtitle {
+    font-size: 0.9rem;
+    color: var(--gl-muted);
+    margin: 0 0 32px;
+}
+
+.pin-input-wrap {
+    margin-bottom: 16px;
+}
+
+.pin-input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--gl-border);
+    border-radius: 10px;
+    color: var(--gl-text);
+    font-size: 1.4rem;
+    letter-spacing: 0.3em;
+    padding: 16px 20px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.pin-input:focus {
+    border-color: var(--gl-blue);
+}
+
+.pin-submit-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.pin-error {
+    color: var(--gl-red);
+    font-size: 0.85rem;
+    margin: 8px 0 0;
+}
+
+.pin-admin-link {
+    display: inline-block;
+    margin-top: 24px;
+    font-size: 0.82rem;
+    color: var(--gl-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.pin-admin-link:hover { color: var(--gl-blue); }
+
+/* ── Control Screen ───────────────────────────────────────────────────────── */
+.control-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.golive-header {
+    background: rgba(22,26,34,0.95);
+    border-bottom: 1px solid var(--gl-border);
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+.golive-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.golive-venue-name {
+    font-size: 0.9rem;
+    color: var(--gl-muted);
+    margin-right: 16px;
+}
+
+.golive-main {
+    flex: 1;
+    padding: 32px 24px 48px;
+}
+
+.golive-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ── Status Banner ────────────────────────────────────────────────────────── */
+.status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: var(--gl-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 32px;
+    border: 1px solid transparent;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+.status-banner-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-banner.status-offline {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.25);
+    color: #fca5a5;
+}
+
+.status-banner.status-offline .status-banner-dot {
+    background: var(--gl-red);
+}
+
+.status-banner.status-live {
+    background: rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,0.3);
+    color: #86efac;
+}
+
+.status-banner.status-live .status-banner-dot {
+    background: var(--gl-green);
+    box-shadow: 0 0 8px var(--gl-green);
+    animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+/* ── Table Cards Grid ─────────────────────────────────────────────────────── */
+.table-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.table-card {
+    background: var(--gl-card-bg);
+    border: 2px solid var(--gl-border);
+    border-radius: var(--gl-radius);
+    padding: 28px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.table-card.is-active {
+    border-color: var(--gl-green);
+    box-shadow: 0 0 24px rgba(34,197,94,0.18);
+}
+
+.table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.table-card-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gl-text);
+}
+
+.table-card-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(34,197,94,0.15);
+    color: var(--gl-green);
+    border: 1px solid rgba(34,197,94,0.3);
+}
+
+.table-card-badge.badge-offline {
+    background: rgba(239,68,68,0.1);
+    color: #fca5a5;
+    border-color: rgba(239,68,68,0.25);
+}
+
+.table-card-source {
+    font-size: 0.8rem;
+    color: var(--gl-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.table-card-source-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+/* ── Go Live / Stop Buttons ───────────────────────────────────────────────── */
+.golive-btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.golive-btn:active {
+    transform: scale(0.97);
+}
+
+.golive-btn-start {
+    background: linear-gradient(135deg, var(--gl-green), #16a34a);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(34,197,94,0.35);
+}
+
+.golive-btn-start:hover {
+    background: linear-gradient(135deg, #4ade80, var(--gl-green));
+    box-shadow: 0 8px 32px rgba(34,197,94,0.5);
+}
+
+.golive-btn-stop {
+    background: linear-gradient(135deg, var(--gl-red), #b91c1c);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(239,68,68,0.3);
+}
+
+.golive-btn-stop:hover {
+    background: linear-gradient(135deg, #f87171, var(--gl-red));
+    box-shadow: 0 8px 32px rgba(239,68,68,0.45);
+}
+
+.golive-btn-switch {
+    background: linear-gradient(135deg, var(--gl-blue), var(--gl-blue-dark));
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0,168,232,0.3);
+}
+
+.golive-btn-switch:hover {
+    box-shadow: 0 8px 32px rgba(0,168,232,0.45);
+}
+
+.golive-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── No tables message ────────────────────────────────────────────────────── */
+.no-tables-msg {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--gl-muted);
+}
+
+.no-tables-msg p {
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .pin-card {
+        padding: 36px 24px 32px;
+    }
+    .golive-main {
+        padding: 20px 16px 40px;
+    }
+    .table-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}

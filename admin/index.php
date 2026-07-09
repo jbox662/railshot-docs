@@ -124,6 +124,24 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         </section>
 
         <section class="admin-panel">
+            <h2>Venue Operator PIN</h2>
+            <p class="admin-hint">Set a short PIN for venue staff to use on the <a href="/golive.html" target="_blank">Go Live page</a>. Staff can switch cameras and start/stop streams without accessing the full admin panel.</p>
+            <form id="operatorPinForm" class="admin-form-grid admin-form-narrow">
+                <label>New Operator PIN
+                    <input type="password" name="newPin" minlength="4" maxlength="12" inputmode="numeric" placeholder="4–12 digits" autocomplete="new-password">
+                </label>
+                <label>Confirm PIN
+                    <input type="password" name="confirmPin" minlength="4" maxlength="12" inputmode="numeric" placeholder="Confirm PIN" autocomplete="new-password">
+                </label>
+                <p class="admin-field-hint">Tip: Use a simple 4–6 digit number that venue staff can remember easily.</p>
+            </form>
+            <div class="admin-actions">
+                <button type="button" id="saveOperatorPinBtn" class="btn btn-secondary">Set Operator PIN</button>
+                <a href="/golive.html" target="_blank" class="btn btn-primary" style="margin-left:12px;">Open Go Live Page &rarr;</a>
+            </div>
+        </section>
+
+        <section class="admin-panel">
             <h2>Change admin password</h2>
             <form id="passwordForm" class="admin-form-grid admin-form-narrow">
                 <label>Current password <input type="password" name="currentPassword" autocomplete="current-password"></label>
