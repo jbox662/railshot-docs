@@ -48,6 +48,10 @@
                             '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
                             '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
                             '<label class="full-width">RTSP URL <input data-venue-field="tables" data-table-field="rtspUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.rtspUrl || '') + '"></label>' +
+                            '<label class="full-width">Scoreholio Overlay URL (for this table)' +
+                                '<input data-venue-field="tables" data-table-field="overlayUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...&amp;court=' + (tableIndex + 1) + '">' +
+                                '<span class="admin-field-hint">Leave blank to use the venue-level overlay URL. Set this to override with a table-specific scoreboard (e.g. court=' + (tableIndex + 1) + ').</span>' +
+                            '</label>' +
                         '</div>' +
                     '</div>'
                 );

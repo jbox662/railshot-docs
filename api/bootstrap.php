@@ -377,14 +377,18 @@ function railshot_public_live_config(?string $venueId = null): array
         $venue = $venues[0] ?? null;
     }
 
+    $venueOverlayUrl = trim($venue['overlayUrl'] ?? '');
     $allTables = [];
     foreach ($venue['tables'] ?? [] as $table) {
         if (empty($table['id']) || empty($table['name'])) {
             continue;
         }
+        // Per-table overlay URL falls back to the venue-level URL if not set
+        $tableOverlayUrl = trim($table['overlayUrl'] ?? '');
         $allTables[] = [
             'id' => $table['id'],
             'name' => $table['name'],
+            'overlayUrl' => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
             // description intentionally omitted — it often contains the camera IP
         ];
     }
@@ -403,6 +407,11 @@ function railshot_public_live_config(?string $venueId = null): array
 
     $publicTables = $activeTable !== null ? [$activeTable] : [];
 
+    // Resolve the effective overlay URL for the active table
+    $activeOverlayUrl = ($activeTable['overlayUrl'] ?? '') !== ''
+        ? $activeTable['overlayUrl']
+        : trim($venue['overlayUrl'] ?? '');
+
     return array_merge($urls, [
         'venueId' => $venue['id'] ?? '',
         'venueName' => $venue['name'] ?? '',
@@ -410,7 +419,7 @@ function railshot_public_live_config(?string $venueId = null): array
         'viewerLocked' => true,
         'activeTableId' => $activeTable['id'] ?? '',
         'overlayEnabled' => !empty($venue['overlayEnabled']),
-        'overlayUrl' => $venue['overlayUrl'] ?? '',
+        'overlayUrl' => $activeOverlayUrl,
     ]);
 }
 

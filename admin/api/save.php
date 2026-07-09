@@ -39,6 +39,7 @@ if ($section === 'live') {
                 'name' => $name,
                 'description' => trim($table['description'] ?? ''),
                 'rtspUrl' => trim($table['rtspUrl'] ?? ''),
+                'overlayUrl' => trim($table['overlayUrl'] ?? ''),
             ];
         }
 

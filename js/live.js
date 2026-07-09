@@ -265,6 +265,12 @@
         // Description is intentionally hidden from viewers (may contain camera IP)
         if (descEl) descEl.textContent = '';
 
+        // Switch scoreboard overlay to this table's URL (falls back to venue-level URL)
+        if (table.overlayUrl && table.overlayUrl.trim() !== '') {
+            config.overlayUrl = table.overlayUrl.trim();
+        }
+        applyScoreboardOverlay();
+
         document.querySelectorAll('.table-item').forEach(function (btn) {
             btn.classList.toggle('active', btn.dataset.stream === table.id);
             btn.setAttribute('aria-selected', btn.dataset.stream === table.id ? 'true' : 'false');
