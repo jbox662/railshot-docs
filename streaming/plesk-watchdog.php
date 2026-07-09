@@ -14,7 +14,14 @@
  */
 
 // ── Config ────────────────────────────────────────────────────────────────
-$confFile  = __DIR__ . '/cameras.conf';
+// Resolve the httpdocs root regardless of how Plesk sets __DIR__
+$httpdocs  = rtrim(str_replace('\\', '/', dirname(__DIR__, 0)), '/') . '/';
+// __DIR__ is the streaming/ folder; cameras.conf is in the same directory
+$confFile  = __DIR__ . DIRECTORY_SEPARATOR . 'cameras.conf';
+// Fallback: try the known absolute Plesk path if __DIR__ resolves unexpectedly
+if (!file_exists($confFile)) {
+    $confFile = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\cameras.conf';
+}
 $logDir    = sys_get_temp_dir();   // C:\Windows\Temp on Windows Plesk
 $pidDir    = sys_get_temp_dir();
 
