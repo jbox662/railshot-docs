@@ -12,12 +12,14 @@ ExecStartPre=/bin/sleep 5
 ExecStart=/usr/bin/ffmpeg \
     -loglevel warning \
     -rtsp_transport tcp \
+    -stimeout 10000000 \
     -i "${RTSP_URL}" \
     -c:v copy \
     -c:a aac \
     -b:a 128k \
     -ar 44100 \
     -f flv \
+    -flvflags no_duration_filesize \
     "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_KEY}"
 Restart=always
 RestartSec=10
