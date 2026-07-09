@@ -2,12 +2,12 @@
 /**
  * RailShot TV — YouTube Live Video Auto-Discovery
  *
- * Returns the current live video embed URL for a given YouTube Channel ID.
- * Uses YouTube Data API v3 search endpoint to find the active live broadcast.
+ * Primary method: scrape youtube.com/channel/{id}/live — works for Public, Unlisted, and Private streams.
+ * Fallback: YouTube Data API v3 search (Public only).
  *
  * GET /api/youtube-live.php?channelId=UCxH4xyXjhMNDR_fLuirDOtA
  *
- * Response (live):   { "ok": true, "videoId": "CmNHWGEJtJo", "embedUrl": "https://www.youtube.com/embed/CmNHWGEJtJo?autoplay=1&mute=1" }
+ * Response (live):    { "ok": true, "videoId": "ABC123", "embedUrl": "https://www.youtube.com/embed/ABC123?autoplay=1&mute=1" }
  * Response (offline): { "ok": false, "error": "No live stream found" }
  */
 
@@ -22,24 +22,20 @@ header('Cache-Control: no-store');
 $config = railshot_load_config();
 $apiKey = trim($config['youtube']['apiKey'] ?? '');
 
-if ($apiKey === '') {
-    railshot_json_response(['ok' => false, 'error' => 'YouTube API key not configured. Set it in the admin panel under Settings.'], 503);
-}
-
 // ── Validate channelId param ──────────────────────────────────────────────────
 $channelId = trim($_GET['channelId'] ?? '');
 if ($channelId === '') {
     railshot_json_response(['ok' => false, 'error' => 'channelId parameter required'], 400);
 }
-// Basic sanity check — YouTube channel IDs are 24 chars starting with UC
 if (!preg_match('/^UC[a-zA-Z0-9_-]{22}$/', $channelId)) {
     railshot_json_response(['ok' => false, 'error' => 'Invalid channelId format'], 400);
 }
 
-// ── Check cache (5-minute TTL to avoid hammering the API) ────────────────────
+// ── Cache setup (30s TTL for offline, 5min for live) ─────────────────────────
 $cacheDir  = RAILSHOT_DATA . DIRECTORY_SEPARATOR . 'yt-cache';
 $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'live-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $channelId) . '.json';
-$cacheTtl  = 300; // 5 minutes
+$liveTtl   = 300; // 5 minutes when live
+$offlineTtl = 30; // 30 seconds when offline
 
 if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0755, true);
@@ -47,78 +43,120 @@ if (!is_dir($cacheDir)) {
 
 if (file_exists($cacheFile)) {
     $cached = json_decode(file_get_contents($cacheFile) ?: '', true);
-    if (is_array($cached) && isset($cached['ts']) && (time() - (int)$cached['ts']) < $cacheTtl) {
-        // Return cached result
-        unset($cached['ts']);
-        railshot_json_response($cached);
+    if (is_array($cached) && isset($cached['ts'])) {
+        $ttl = ($cached['ok'] ?? false) ? $liveTtl : $offlineTtl;
+        if ((time() - (int)$cached['ts']) < $ttl) {
+            $out = $cached;
+            unset($out['ts']);
+            railshot_json_response($out);
+        }
     }
 }
 
-// ── Call YouTube Data API v3 ──────────────────────────────────────────────────
-$url = 'https://www.googleapis.com/youtube/v3/search?' . http_build_query([
-    'part'       => 'id',
-    'channelId'  => $channelId,
-    'eventType'  => 'live',
-    'type'       => 'video',
-    'maxResults' => 1,
-    'key'        => $apiKey,
-]);
+// ── Method 1: Scrape youtube.com/channel/{id}/live ───────────────────────────
+// This works for Public AND Unlisted streams — no API key needed.
+$videoId = scrapeChannelLivePage($channelId);
 
-$ctx = stream_context_create([
-    'http' => [
-        'timeout'       => 8,
-        'ignore_errors' => true,
-        'header'        => "User-Agent: RailShotTV/1.0\r\n",
-    ],
-    'ssl' => [
-        'verify_peer'      => true,
-        'verify_peer_name' => true,
-    ],
-]);
-
-$raw = @file_get_contents($url, false, $ctx);
-
-if ($raw === false) {
-    railshot_json_response(['ok' => false, 'error' => 'YouTube API request failed — check server internet access'], 502);
+// ── Method 2: YouTube Data API v3 search (Public only, fallback) ─────────────
+if (!$videoId && $apiKey !== '') {
+    $videoId = apiSearchLive($channelId, $apiKey);
 }
 
-$data = json_decode($raw, true);
-
-if (!is_array($data)) {
-    railshot_json_response(['ok' => false, 'error' => 'Invalid response from YouTube API'], 502);
+// ── Build response ────────────────────────────────────────────────────────────
+if ($videoId) {
+    $result = [
+        'ok'       => true,
+        'videoId'  => $videoId,
+        'embedUrl' => 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1',
+    ];
+    file_put_contents($cacheFile, json_encode(array_merge($result, ['ts' => time()])));
+    railshot_json_response($result);
 }
 
-// Handle API errors (e.g. invalid key, quota exceeded)
-if (isset($data['error'])) {
-    $errMsg = $data['error']['message'] ?? 'YouTube API error';
-    $errCode = (int)($data['error']['code'] ?? 500);
-    railshot_json_response(['ok' => false, 'error' => $errMsg], $errCode >= 400 ? $errCode : 500);
+$offline = ['ok' => false, 'error' => 'No live stream found for this channel'];
+file_put_contents($cacheFile, json_encode(array_merge($offline, ['ts' => time()])));
+railshot_json_response($offline);
+
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Scrape the /live page of a YouTube channel to extract the current live video ID.
+ * Works for Public and Unlisted streams. Returns empty string if not live.
+ */
+function scrapeChannelLivePage(string $channelId): string
+{
+    $urls = [
+        'https://www.youtube.com/channel/' . $channelId . '/live',
+        'https://www.youtube.com/@' . $channelId . '/live', // handle-based (fallback)
+    ];
+
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout'       => 10,
+            'ignore_errors' => true,
+            'header'        => implode("\r\n", [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept-Language: en-US,en;q=0.9',
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            ]) . "\r\n",
+        ],
+        'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+    ]);
+
+    foreach ($urls as $url) {
+        $html = @file_get_contents($url, false, $ctx);
+        if (!$html) continue;
+
+        // Only return a video ID if the page indicates an active live stream.
+        // Check for canonical live indicators in the page data.
+        $isLive = (
+            strpos($html, '"isLive":true') !== false ||
+            strpos($html, '"liveBroadcastContent":"live"') !== false ||
+            strpos($html, 'isLiveBroadcast') !== false
+        );
+
+        if (!$isLive) continue;
+
+        // Extract videoId — appears multiple times, grab the first one
+        if (preg_match('/"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/', $html, $m)) {
+            return $m[1];
+        }
+    }
+
+    return '';
 }
 
-// Extract video ID from results
-$items = $data['items'] ?? [];
-if (empty($items)) {
-    // No live stream found — cache the "offline" result for 30 seconds only
-    // so that clicking Retry quickly picks up a newly started stream
-    $offlineResult = ['ok' => false, 'error' => 'No live stream found for this channel'];
-    file_put_contents($cacheFile, json_encode(array_merge($offlineResult, ['ts' => time() - 270])));
-    railshot_json_response($offlineResult);
+/**
+ * Use YouTube Data API v3 search to find a live video for the channel.
+ * Only finds Public streams.
+ */
+function apiSearchLive(string $channelId, string $apiKey): string
+{
+    $url = 'https://www.googleapis.com/youtube/v3/search?' . http_build_query([
+        'part'       => 'id',
+        'channelId'  => $channelId,
+        'eventType'  => 'live',
+        'type'       => 'video',
+        'maxResults' => 1,
+        'key'        => $apiKey,
+    ]);
+
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout'       => 8,
+            'ignore_errors' => true,
+            'header'        => "User-Agent: RailShotTV/1.0\r\n",
+        ],
+        'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+    ]);
+
+    $raw  = @file_get_contents($url, false, $ctx);
+    $data = $raw ? json_decode($raw, true) : null;
+
+    if (!is_array($data) || isset($data['error']) || empty($data['items'])) {
+        return '';
+    }
+
+    return $data['items'][0]['id']['videoId'] ?? '';
 }
-
-$videoId = $items[0]['id']['videoId'] ?? '';
-if ($videoId === '') {
-    railshot_json_response(['ok' => false, 'error' => 'Could not extract video ID from YouTube response'], 502);
-}
-
-$embedUrl = 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1';
-
-$result = [
-    'ok'       => true,
-    'videoId'  => $videoId,
-    'embedUrl' => $embedUrl,
-];
-
-// Cache the successful result
-file_put_contents($cacheFile, json_encode(array_merge($result, ['ts' => time()])));
-
-railshot_json_response($result);
