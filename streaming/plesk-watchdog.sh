@@ -70,7 +70,8 @@ while IFS= read -r line; do
         -rtsp_transport tcp \
         -timeout 10000000 \
         -i "$RTSP_URL" \
-        -c:v copy \
+        -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+        -g 60 -keyint_min 60 -sc_threshold 0 \
         -c:a aac \
         -b:a 128k \
         -ar 44100 \
