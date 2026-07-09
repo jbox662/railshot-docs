@@ -11,6 +11,7 @@ railshot_require_login();
 $config = railshot_load_config();
 $live = $config['live'] ?? [];
 $site = $config['site'] ?? [];
+$youtube = $config['youtube'] ?? [];
 $landing = $live['landing'] ?? railshot_default_config()['live']['landing'];
 $venues = railshot_normalize_venues($live);
 $landingBullets = implode("\n", $landing['bullets'] ?? []);
@@ -79,6 +80,34 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
             </div>
         </section>
 
+        <!-- ── YouTube API Settings ─────────────────────────────────────── -->
+        <section class="admin-panel">
+            <h2>YouTube API settings</h2>
+            <p class="admin-hint">
+                Enter your Google API key to enable <strong>automatic live stream detection</strong>.
+                Once set, each camera only needs a <strong>YouTube Channel ID</strong> — the system finds the live video automatically every time you go live.
+                No more copying URLs.
+            </p>
+            <p class="admin-hint">
+                Get a free key: <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud Console → YouTube Data API v3 → Enable → Credentials → Create API Key</a>
+            </p>
+            <form id="youtubeSettingsForm" class="admin-form-grid admin-form-narrow">
+                <label class="full-width">Google API Key (YouTube Data API v3)
+                    <input type="text" name="apiKey" id="youtubeApiKeyInput"
+                           value="<?= htmlspecialchars($youtube['apiKey'] ?? '') ?>"
+                           placeholder="AIzaSy..."
+                           autocomplete="off"
+                           spellcheck="false">
+                    <span class="admin-field-hint">This key is stored securely on your server and never exposed to viewers.</span>
+                </label>
+            </form>
+            <div class="admin-actions">
+                <button type="button" id="saveYoutubeSettingsBtn" class="btn btn-primary">Save YouTube settings</button>
+                <button type="button" id="testYoutubeApiBtn" class="btn btn-secondary" style="margin-left:12px;">Test API key</button>
+                <span id="youtubeApiTestResult" style="margin-left:12px;font-size:0.9em;"></span>
+            </div>
+        </section>
+
         <section class="admin-panel">
             <h2>Site content</h2>
             <p class="admin-hint">Updates the homepage hero, contact email, and download note.</p>
@@ -135,7 +164,8 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
     <script>
         window.RAILSHOT_ADMIN_LANDING = <?= json_encode($landing, JSON_UNESCAPED_SLASHES) ?>;
         window.RAILSHOT_ADMIN_VENUES = <?= json_encode($venues, JSON_UNESCAPED_SLASHES) ?>;
+        window.RAILSHOT_YOUTUBE_API_CONFIGURED = <?= json_encode(!empty($youtube['apiKey'])) ?>;
     </script>
-    <script src="/js/admin.js?v=4"></script>
+    <script src="/js/admin.js?v=5"></script>
 </body>
 </html>

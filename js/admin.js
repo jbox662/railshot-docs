@@ -46,8 +46,11 @@
                             '<label>Path ID <input data-venue-field="tables" data-table-field="id" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
                             '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
                             '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
-                            '<label class="full-width">YouTube Live URL <input data-venue-field="tables" data-table-field="youtubeUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeUrl || '') + '" placeholder="https://www.youtube.com/watch?v=VIDEO_ID or channel embed URL">' +
-                                '<span class="admin-field-hint">Paste any YouTube live URL — watch URL, short URL, or embed URL all work.</span>' +
+                            '<label class="full-width">YouTube Channel ID <input data-venue-field="tables" data-table-field="youtubeChannelId" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeChannelId || '') + '" placeholder="UCxH4xyXjhMNDR_fLuirDOtA">' +
+                                '<span class="admin-field-hint">Enter the YouTube Channel ID (starts with UC...) — found in YouTube Studio &rarr; Settings &rarr; Channel &rarr; Advanced. The system auto-finds the live stream. <strong>Enter this once, never update it again.</strong></span>' +
+                            '</label>' +
+                            '<label class="full-width">YouTube URL (manual fallback) <input data-venue-field="tables" data-table-field="youtubeUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeUrl || '') + '" placeholder="Leave blank if Channel ID is set above">' +
+                                '<span class="admin-field-hint">Optional. Only needed if auto-detection is not working. Paste a youtube.com/live/ID URL here.</span>' +
                             '</label>' +
                             '<label class="full-width">Scoreholio Overlay URL (for this table)' +
                                 '<input data-venue-field="tables" data-table-field="overlayUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...&amp;court=' + (tableIndex + 1) + '">' +
@@ -133,6 +136,7 @@
                     id: 'table' + next,
                     name: 'Table ' + next,
                     description: '',
+                    youtubeChannelId: '',
                     youtubeUrl: '',
                     overlayUrl: ''
                 });
@@ -334,6 +338,7 @@
                 id: 'table1',
                 name: 'Table 1',
                 description: '',
+                youtubeChannelId: '',
                 youtubeUrl: '',
                 overlayUrl: ''
             }]
@@ -347,6 +352,43 @@
             showMessage('Live settings saved. Venues updated on live.html.');
         } catch (err) {
             showMessage(err.message, true);
+        }
+    });
+
+    // ── YouTube API Settings ─────────────────────────────────────────────────
+    document.getElementById('saveYoutubeSettingsBtn')?.addEventListener('click', async function () {
+        const apiKey = (document.getElementById('youtubeApiKeyInput')?.value || '').trim();
+        try {
+            await postSave({ section: 'youtube', apiKey: apiKey });
+            showMessage('YouTube API key saved. Auto-detection is now active for cameras with a Channel ID.');
+        } catch (err) {
+            showMessage('Error: ' + err.message, true);
+        }
+    });
+
+    document.getElementById('testYoutubeApiBtn')?.addEventListener('click', async function () {
+        const resultEl = document.getElementById('youtubeApiTestResult');
+        const apiKey = (document.getElementById('youtubeApiKeyInput')?.value || '').trim();
+        if (!apiKey) {
+            if (resultEl) resultEl.textContent = 'Enter an API key first.';
+            return;
+        }
+        if (resultEl) resultEl.textContent = 'Testing…';
+        try {
+            const res = await fetch('/api/youtube-test.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ apiKey: apiKey })
+            });
+            const result = await res.json();
+            if (result.ok) {
+                if (resultEl) resultEl.innerHTML = '<span style="color:#22c55e">✓ API key is valid and working!</span>';
+            } else {
+                if (resultEl) resultEl.innerHTML = '<span style="color:#ef4444">✗ ' + (result.error || 'Invalid key') + '</span>';
+            }
+        } catch (err) {
+            if (resultEl) resultEl.innerHTML = '<span style="color:#ef4444">✗ Test failed: ' + err.message + '</span>';
         }
     });
 

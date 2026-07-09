@@ -131,57 +131,89 @@
     }
 
     // ── YouTube iframe player ────────────────────────────────────────────────
-    function loadStreamYouTube(table) {
-        const youtubeUrl = table.youtubeUrl || '';
-        const videoWrapper = videoEl ? videoEl.parentElement : null;
-        if (!videoWrapper) return;
-
-        // Hide the native <video> element — YouTube uses an iframe
-        videoEl.style.display = 'none';
-
-        // Remove any existing YouTube iframe
-        var existingYt = videoWrapper.querySelector('.yt-live-iframe');
-        if (existingYt) existingYt.remove();
-
-        // Build a clean embeddable URL
+    function buildEmbedUrl(youtubeUrl) {
         var embedUrl = youtubeUrl;
-
         // Handle full watch URLs: https://www.youtube.com/watch?v=ID
         var watchMatch = youtubeUrl.match(/[?&]v=([^&]+)/);
-        if (watchMatch) {
-            embedUrl = 'https://www.youtube.com/embed/' + watchMatch[1] + '?autoplay=1&mute=1';
-        }
+        if (watchMatch) return 'https://www.youtube.com/embed/' + watchMatch[1] + '?autoplay=1&mute=1';
         // Handle youtu.be/ID short URLs
         var shortMatch = youtubeUrl.match(/youtu\.be\/([^?&]+)/);
-        if (shortMatch) {
-            embedUrl = 'https://www.youtube.com/embed/' + shortMatch[1] + '?autoplay=1&mute=1';
-        }
+        if (shortMatch) return 'https://www.youtube.com/embed/' + shortMatch[1] + '?autoplay=1&mute=1';
         // Handle youtube.com/live/ID share URLs
         var liveShareMatch = youtubeUrl.match(/youtube\.com\/live\/([^?&]+)/);
-        if (liveShareMatch) {
-            embedUrl = 'https://www.youtube.com/embed/' + liveShareMatch[1] + '?autoplay=1&mute=1';
-        }
-        // Handle channel live stream: https://www.youtube.com/embed/live_stream?channel=ID
-        if (youtubeUrl.indexOf('live_stream') !== -1 && youtubeUrl.indexOf('autoplay') === -1) {
-            embedUrl = youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1';
-        }
+        if (liveShareMatch) return 'https://www.youtube.com/embed/' + liveShareMatch[1] + '?autoplay=1&mute=1';
         // Handle already-formed embed URLs
-        if (youtubeUrl.indexOf('/embed/') !== -1 && youtubeUrl.indexOf('autoplay') === -1) {
-            embedUrl = youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1';
+        if (youtubeUrl.indexOf('/embed/') !== -1) {
+            return youtubeUrl.indexOf('autoplay') === -1
+                ? youtubeUrl + (youtubeUrl.indexOf('?') !== -1 ? '&' : '?') + 'autoplay=1&mute=1'
+                : youtubeUrl;
         }
+        return embedUrl;
+    }
 
+    function insertYouTubeIframe(embedUrl, tableName) {
+        var videoWrapper = videoEl ? videoEl.parentElement : null;
+        if (!videoWrapper) return;
+        videoEl.style.display = 'none';
+        var existingYt = videoWrapper.querySelector('.yt-live-iframe');
+        if (existingYt) existingYt.remove();
         var iframe = document.createElement('iframe');
         iframe.className = 'yt-live-iframe';
         iframe.src = embedUrl;
         iframe.setAttribute('frameborder', '0');
         iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         iframe.setAttribute('allowfullscreen', 'true');
-        iframe.setAttribute('title', 'Live: ' + table.name);
+        iframe.setAttribute('title', 'Live: ' + tableName);
         videoWrapper.insertBefore(iframe, videoWrapper.firstChild);
-
         hideOverlay();
-        setStatus('live', 'Live \u00b7 ' + table.name);
+        setStatus('live', 'Live \u00b7 ' + tableName);
         setProtocolBadge('YouTube');
+    }
+
+    function loadStreamYouTube(table) {
+        var channelId = (table.youtubeChannelId || '').trim();
+        var youtubeUrl = (table.youtubeUrl || '').trim();
+
+        // ── Auto-detect via Channel ID (preferred) ────────────────────────
+        if (channelId) {
+            setStatus('connecting', 'Finding live stream\u2026');
+            showOverlay('Finding live stream\u2026', false, false);
+            fetch('/api/youtube-live.php?channelId=' + encodeURIComponent(channelId), { cache: 'no-store' })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.ok && data.embedUrl) {
+                        insertYouTubeIframe(data.embedUrl, table.name);
+                    } else if (youtubeUrl) {
+                        // Fall back to manual URL if channel has no live stream right now
+                        insertYouTubeIframe(buildEmbedUrl(youtubeUrl), table.name);
+                    } else {
+                        setStatus('error', 'Not live yet');
+                        showOverlay('No live stream found for this camera. The stream may not have started yet.', true, true);
+                        setProtocolBadge('');
+                    }
+                })
+                .catch(function () {
+                    // Network error — fall back to manual URL if available
+                    if (youtubeUrl) {
+                        insertYouTubeIframe(buildEmbedUrl(youtubeUrl), table.name);
+                    } else {
+                        setStatus('error', 'Stream lookup failed');
+                        showOverlay('Could not reach the stream detection service. Check back in a moment.', true, true);
+                        setProtocolBadge('');
+                    }
+                });
+            return;
+        }
+
+        // ── Manual URL fallback ───────────────────────────────────────────
+        if (youtubeUrl) {
+            insertYouTubeIframe(buildEmbedUrl(youtubeUrl), table.name);
+            return;
+        }
+
+        setStatus('error', 'Stream not configured');
+        showOverlay('No YouTube Channel ID or URL is set for this camera. Configure it in the admin panel.', true);
+        setProtocolBadge('');
     }
 
     function loadTable(table) {
@@ -206,15 +238,17 @@
 
         cleanupPlayer();
 
-        // YouTube path: if the table has a youtubeUrl, use the iframe player
-        if (table.youtubeUrl && table.youtubeUrl.trim() !== '') {
+        // YouTube path: use iframe player if channel ID or URL is configured
+        var hasChannelId = !!(table.youtubeChannelId && table.youtubeChannelId.trim());
+        var hasUrl = !!(table.youtubeUrl && table.youtubeUrl.trim());
+        if (hasChannelId || hasUrl) {
             loadStreamYouTube(table);
             return;
         }
 
         // No stream configured
         setStatus('error', 'Stream not configured');
-        showOverlay('No YouTube Live URL is set for this table. Configure it in the admin panel.', true);
+        showOverlay('No YouTube Channel ID or URL is set for this camera. Configure it in the admin panel.', true);
         setProtocolBadge('');
     }
 

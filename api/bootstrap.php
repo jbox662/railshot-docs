@@ -420,6 +420,7 @@ function railshot_public_live_config(?string $venueId = null): array
         $allTables[] = [
             'id' => $table['id'],
             'name' => $table['name'],
+            'youtubeChannelId' => trim($table['youtubeChannelId'] ?? ''),
             'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
             'overlayUrl' => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
             // description intentionally omitted — it often contains the camera IP

@@ -38,6 +38,7 @@ if ($section === 'live') {
                 'id' => $id,
                 'name' => $name,
                 'description' => trim($table['description'] ?? ''),
+                'youtubeChannelId' => trim($table['youtubeChannelId'] ?? ''),
                 'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
                 'overlayUrl' => trim($table['overlayUrl'] ?? ''),
             ];
@@ -121,6 +122,21 @@ if ($section === 'password') {
 
     $admin['passwordHash'] = password_hash($new, PASSWORD_DEFAULT);
     file_put_contents(RAILSHOT_ADMIN_FILE, json_encode($admin, JSON_PRETTY_PRINT));
+    railshot_json_response(['ok' => true]);
+}
+
+if ($section === 'youtube') {
+    $apiKey = trim($body['apiKey'] ?? '');
+    // Basic sanity check — Google API keys start with AIza
+    if ($apiKey !== '' && !preg_match('/^AIza[0-9A-Za-z_-]{35}$/', $apiKey)) {
+        railshot_json_response(['error' => 'That does not look like a valid Google API key (should start with AIza and be 39 characters)'], 400);
+    }
+    $config['youtube'] = [
+        'apiKey' => $apiKey,
+    ];
+    if (!railshot_save_config($config)) {
+        railshot_json_response(['error' => 'Failed to save config'], 500);
+    }
     railshot_json_response(['ok' => true]);
 }
 
