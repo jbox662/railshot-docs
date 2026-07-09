@@ -226,8 +226,11 @@
         }
 
         if (!tables.length) {
-            showOverlay('No live stream on air. Choose a table in the admin panel.', true);
-            setStatus('error', 'Off air');
+            // No active table = stream is stopped / off air
+            cleanupPlayer();
+            showOverlay('No stream is currently on air. Check back soon!', true);
+            setStatus('error', 'Off Air');
+            setProtocolBadge('');
             return;
         }
 
@@ -287,10 +290,12 @@
         if (nextId && nextId !== currentTableId) {
             loadTable(nextTable);
         } else if (!nextId && currentTableId) {
+            // Admin stopped the stream
             currentTableId = null;
             cleanupPlayer();
-            showOverlay('No live stream on air. Choose a table in the admin panel.', true);
-            setStatus('error', 'Off air');
+            showOverlay('No stream is currently on air. Check back soon!', true);
+            setStatus('error', 'Off Air');
+            setProtocolBadge('');
         }
     }
 
@@ -379,36 +384,43 @@
 
         switcherEl.classList.remove('hidden');
 
+        async function postAdminLive(tableId) {
+            const r = await fetch('/api/admin-live.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ venue: config.venueId || '', tableId: tableId }),
+            });
+            return r.json();
+        }
+
         function renderBtns(activeId) {
             btnsEl.innerHTML = '';
+
+            // Per-table Go Live buttons
             (adminData.tables || []).forEach(function (t) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'admin-switcher-btn' + (t.id === activeId ? ' active' : '');
-                btn.textContent = t.name;
+                btn.textContent = (t.id === activeId ? '\u25cf ' : '') + t.name;
                 btn.dataset.tableId = t.id;
                 btn.addEventListener('click', async function () {
                     if (btn.disabled) return;
-                    btnsEl.querySelectorAll('.admin-switcher-btn').forEach(function (b) { b.disabled = true; });
+                    btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
                     if (statusSpan) statusSpan.textContent = 'Switching\u2026';
                     try {
-                        const r = await fetch('/api/admin-live.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ venue: config.venueId || '', tableId: t.id }),
-                        });
-                        const result = await r.json();
+                        const result = await postAdminLive(t.id);
                         if (result.ok) {
                             adminData.tables.forEach(function (tbl) {
                                 if (tbl.id === t.id && tbl.overlayUrl) {
                                     config.overlayUrl = tbl.overlayUrl;
                                 }
                             });
+                            adminData.activeTableId = t.id;
                             renderBtns(t.id);
                             config = await loadConfig();
                             buildTableList();
                             applyScoreboardOverlay();
-                            if (statusSpan) statusSpan.textContent = 'Switched to ' + t.name;
+                            if (statusSpan) statusSpan.textContent = 'Now on air: ' + t.name;
                             setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
                         } else {
                             if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
@@ -416,10 +428,42 @@
                     } catch (e) {
                         if (statusSpan) statusSpan.textContent = 'Network error';
                     }
-                    btnsEl.querySelectorAll('.admin-switcher-btn').forEach(function (b) { b.disabled = false; });
+                    btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
                 });
                 btnsEl.appendChild(btn);
             });
+
+            // Stop Stream button — only shown when a table is active
+            const stopBtn = document.createElement('button');
+            stopBtn.type = 'button';
+            stopBtn.className = 'admin-switcher-btn admin-switcher-stop' + (activeId ? '' : ' hidden');
+            stopBtn.textContent = '\u25a0 Stop Stream';
+            stopBtn.addEventListener('click', async function () {
+                if (stopBtn.disabled) return;
+                btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+                if (statusSpan) statusSpan.textContent = 'Stopping\u2026';
+                try {
+                    const result = await postAdminLive('__none__');
+                    if (result.ok) {
+                        adminData.activeTableId = '';
+                        renderBtns('');
+                        config = await loadConfig();
+                        // Show offline overlay to the admin too
+                        cleanupPlayer();
+                        showOverlay('Stream stopped. Viewers see an offline message.', true);
+                        setStatus('error', 'Off Air');
+                        setProtocolBadge('');
+                        if (statusSpan) statusSpan.textContent = 'Stream stopped.';
+                        setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
+                    } else {
+                        if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
+                    }
+                } catch (e) {
+                    if (statusSpan) statusSpan.textContent = 'Network error';
+                }
+                btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+            });
+            btnsEl.appendChild(stopBtn);
         }
 
         renderBtns(adminData.activeTableId);

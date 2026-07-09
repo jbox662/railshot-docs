@@ -376,5 +376,90 @@
         }
     });
 
+    // ── Stream Control Panel ───────────────────────────────────────────────────
+    const streamControlEl = document.getElementById('streamControlVenues');
+
+    async function renderStreamControl() {
+        if (!streamControlEl) return;
+
+        // Fetch current state from admin-live API for each venue
+        const venueList = Array.isArray(window.RAILSHOT_ADMIN_VENUES) ? window.RAILSHOT_ADMIN_VENUES : [];
+
+        if (!venueList.length) {
+            streamControlEl.innerHTML = '<p class="admin-hint">No venues configured yet. Add a venue below first.</p>';
+            return;
+        }
+
+        // Fetch live state for the first venue (or all, one at a time)
+        streamControlEl.innerHTML = venueList.map(function (venue, vi) {
+            const tables = venue.tables || [];
+            const activeId = venue.activeTableId || '';
+            const isLive = activeId !== '';
+            const tableButtons = tables.map(function (t) {
+                const isActive = t.id === activeId;
+                return '<button type="button" class="stream-ctrl-table-btn' + (isActive ? ' active' : '') + '" data-venue-id="' + escapeHtml(venue.id || '') + '" data-table-id="' + escapeHtml(t.id) + '">' +
+                    (isActive ? '\u25cf On Air: ' : '') + escapeHtml(t.name) +
+                '</button>';
+            }).join('');
+
+            return '<div class="stream-ctrl-venue" data-venue-idx="' + vi + '">' +
+                '<div class="stream-ctrl-venue-header">' +
+                    '<span class="stream-ctrl-venue-name">' + escapeHtml(venue.name || venue.id || 'Venue ' + (vi + 1)) + '</span>' +
+                    '<span class="stream-ctrl-badge ' + (isLive ? 'stream-ctrl-badge-live' : 'stream-ctrl-badge-off') + '">' +
+                        (isLive ? '\u25cf On Air' : '\u25cb Off Air') +
+                    '</span>' +
+                '</div>' +
+                '<div class="stream-ctrl-actions">' +
+                    tableButtons +
+                    '<button type="button" class="stream-ctrl-stop-btn' + (!isLive ? ' hidden' : '') + '" data-venue-id="' + escapeHtml(venue.id || '') + '" data-table-id="__none__">\u25a0 Stop Stream</button>' +
+                '</div>' +
+                '<span class="stream-ctrl-status" id="stream-ctrl-status-' + vi + '"></span>' +
+            '</div>';
+        }).join('');
+
+        // Wire up buttons
+        streamControlEl.querySelectorAll('[data-table-id]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                const venueId = btn.getAttribute('data-venue-id');
+                const tableId = btn.getAttribute('data-table-id');
+                const vi = Number(btn.closest('[data-venue-idx]').getAttribute('data-venue-idx'));
+                const statusEl = document.getElementById('stream-ctrl-status-' + vi);
+
+                streamControlEl.querySelectorAll('[data-table-id]').forEach(function (b) { b.disabled = true; });
+                if (statusEl) statusEl.textContent = 'Updating\u2026';
+
+                try {
+                    const res = await fetch('/api/admin-live.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ venue: venueId, tableId: tableId })
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.ok) throw new Error(result.error || 'Failed');
+
+                    // Update local venues array so the UI reflects the change
+                    const newActiveId = result.activeTableId || '';
+                    if (window.RAILSHOT_ADMIN_VENUES) {
+                        window.RAILSHOT_ADMIN_VENUES[vi].activeTableId = newActiveId;
+                        venues[vi].activeTableId = newActiveId;
+                    }
+
+                    if (statusEl) {
+                        statusEl.textContent = tableId === '__none__' ? 'Stream stopped.' : 'Now on air: ' + tableId;
+                        setTimeout(function () { if (statusEl) statusEl.textContent = ''; }, 3000);
+                    }
+                    renderStreamControl();
+                    renderVenues(); // keep the on-air dropdown in sync
+                } catch (err) {
+                    if (statusEl) statusEl.textContent = 'Error: ' + err.message;
+                } finally {
+                    streamControlEl.querySelectorAll('[data-table-id]').forEach(function (b) { b.disabled = false; });
+                }
+            });
+        });
+    }
+
     renderVenues();
+    renderStreamControl();
 })();

@@ -1,8 +1,10 @@
 <?php
 /**
  * RailShot TV — Admin live control API
- * GET  /api/admin-live.php?venue=<id>  → returns { isAdmin, tables, activeTableId }
- * POST /api/admin-live.php             → { venue, tableId } → switches active table
+ * GET  /api/admin-live.php?venue=<id>  → { isAdmin, tables, activeTableId }
+ * POST /api/admin-live.php             → { venue, tableId }
+ *   tableId = '<id>'     → switch to that table (Go Live)
+ *   tableId = '__none__' → stop stream (Off Air)
  */
 
 require_once dirname(__DIR__) . '/api/bootstrap.php';
@@ -35,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         railshot_json_response(['isAdmin' => true, 'tables' => [], 'activeTableId' => '']);
     }
 
-    // Return ALL tables (not just the active one) so admin can pick any
+    // Return ALL tables so admin can pick any
     $tables = [];
     foreach ($venue['tables'] ?? [] as $table) {
         if (empty($table['id']) || empty($table['name'])) {
@@ -51,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     railshot_json_response([
         'isAdmin'       => true,
         'tables'        => $tables,
-        'activeTableId' => $venue['activeTableId'] ?? ($tables[0]['id'] ?? ''),
+        'activeTableId' => $venue['activeTableId'] ?? '',
     ]);
 }
 
-// ── POST: switch active table ────────────────────────────────────────────────
+// ── POST: switch active table or stop stream ─────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$isAdmin) {
         railshot_json_response(['error' => 'Unauthorized'], 401);
@@ -63,10 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $body    = railshot_read_json_body();
     $venueId = trim($body['venue'] ?? '');
-    $tableId = railshot_sanitize_table_id($body['tableId'] ?? '');
+    $tableId = trim($body['tableId'] ?? '');
 
-    if ($tableId === '') {
-        railshot_json_response(['error' => 'tableId required'], 400);
+    // '__none__' sentinel = stop the stream (set activeTableId to '')
+    if ($tableId === '__none__') {
+        $newActiveId = '';
+    } else {
+        $newActiveId = railshot_sanitize_table_id($tableId);
+        if ($newActiveId === '') {
+            railshot_json_response(['error' => 'tableId required'], 400);
+        }
     }
 
     $config = railshot_load_config();
@@ -77,25 +85,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$matchVenue) {
             continue;
         }
-        // Verify the tableId actually exists in this venue
-        $tableIds = array_column($venue['tables'] ?? [], 'id');
-        if (in_array($tableId, $tableIds, true)) {
-            $venue['activeTableId'] = $tableId;
-            $found = true;
-            break;
+
+        // For a real table switch, verify the ID exists in this venue
+        if ($newActiveId !== '') {
+            $tableIds = array_column($venue['tables'] ?? [], 'id');
+            if (!in_array($newActiveId, $tableIds, true)) {
+                continue; // try next venue
+            }
         }
+
+        $venue['activeTableId'] = $newActiveId;
+        $found = true;
+        break;
     }
     unset($venue);
 
     if (!$found) {
-        railshot_json_response(['error' => 'Table not found in venue'], 404);
+        railshot_json_response(['error' => 'Venue or table not found'], 404);
     }
 
     if (!railshot_save_config($config)) {
         railshot_json_response(['error' => 'Failed to save config'], 500);
     }
 
-    railshot_json_response(['ok' => true, 'activeTableId' => $tableId]);
+    railshot_json_response(['ok' => true, 'activeTableId' => $newActiveId]);
 }
 
 railshot_json_response(['error' => 'Method not allowed'], 405);

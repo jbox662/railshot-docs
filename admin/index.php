@@ -55,6 +55,13 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
             </form>
         </section>
 
+        <!-- ── Stream Control ───────────────────────────────────────────── -->
+        <section class="admin-panel" id="streamControlPanel">
+            <h2>Stream control</h2>
+            <p class="admin-hint">Start or stop the live stream for each venue. Viewers see an offline message when the stream is stopped.</p>
+            <div id="streamControlVenues"></div>
+        </section>
+
         <section class="admin-panel">
             <h2>Venues &amp; cameras</h2>
             <p class="admin-hint">Each venue appears on the live page. Viewers pick a venue, then watch the <strong>on-air</strong> camera you select for that venue.</p>
@@ -129,6 +136,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         window.RAILSHOT_ADMIN_LANDING = <?= json_encode($landing, JSON_UNESCAPED_SLASHES) ?>;
         window.RAILSHOT_ADMIN_VENUES = <?= json_encode($venues, JSON_UNESCAPED_SLASHES) ?>;
     </script>
-    <script src="/js/admin.js?v=3"></script>
+    <script src="/js/admin.js?v=4"></script>
 </body>
 </html>
