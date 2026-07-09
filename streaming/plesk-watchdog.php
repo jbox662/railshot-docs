@@ -2,8 +2,8 @@
 /**
  * RailShot TV — Stream Watchdog (Windows Plesk / PHP CLI)
  *
- * Checks if each camera's FFmpeg process is running.
- * If not, starts it in the background.
+ * Checks if each camera's FFmpeg process is running using wmic.
+ * If not, starts it in the background via WScript.Shell.
  * Run every minute via Plesk Scheduled Tasks → Run a PHP script.
  *
  * SETUP in Plesk:
@@ -25,7 +25,6 @@ function wlog($msg) {
     echo $line;
 }
 
-// Catch all PHP errors and write them to the log
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     wlog("PHP ERROR [$errno] $errstr in $errfile on line $errline");
     return true;
@@ -33,58 +32,68 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
 
 wlog("=== Watchdog started ===");
 wlog("PHP version: " . PHP_VERSION);
-wlog("__DIR__: " . __DIR__);
-wlog("__FILE__: " . __FILE__);
 
 // ── Config ────────────────────────────────────────────────────────────────
-// Try __DIR__ first, then fall back to the known absolute path
 $confFile = __DIR__ . DIRECTORY_SEPARATOR . 'cameras.conf';
-wlog("Looking for cameras.conf at: $confFile");
-
 if (!file_exists($confFile)) {
     $confFile = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\cameras.conf';
-    wlog("Not found, trying fallback: $confFile");
 }
-
 if (!file_exists($confFile)) {
-    wlog("ERROR: cameras.conf not found at either path. Aborting.");
+    wlog("ERROR: cameras.conf not found. Aborting.");
     exit(1);
 }
-
 wlog("Found cameras.conf at: $confFile");
 
 // ── Find FFmpeg ───────────────────────────────────────────────────────────
 $ffmpegCandidates = [
-    // First check inside the streaming folder (within open_basedir)
     __DIR__ . '\\ffmpeg.exe',
     'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\ffmpeg.exe',
-    // Windows Temp is also allowed
     'C:\\WINDOWS\\Temp\\ffmpeg.exe',
 ];
 
 $ffmpeg = null;
-
-// Check PATH first
-exec('where ffmpeg 2>NUL', $whereOut, $whereRet);
-if ($whereRet === 0 && !empty($whereOut[0])) {
-    $ffmpeg = trim($whereOut[0]);
-    wlog("Found ffmpeg in PATH: $ffmpeg");
-}
-
-if (!$ffmpeg) {
-    foreach ($ffmpegCandidates as $candidate) {
-        if (file_exists($candidate)) {
-            $ffmpeg = $candidate;
-            wlog("Found ffmpeg at: $ffmpeg");
-            break;
-        }
+foreach ($ffmpegCandidates as $candidate) {
+    if (file_exists($candidate)) {
+        $ffmpeg = $candidate;
+        wlog("Found ffmpeg at: $ffmpeg");
+        break;
     }
 }
 
 if (!$ffmpeg) {
-    wlog("ERROR: ffmpeg not found in PATH or any known location.");
-    wlog("Checked: " . implode(', ', $ffmpegCandidates));
+    // Try PATH as last resort
+    exec('where ffmpeg 2>NUL', $whereOut, $whereRet);
+    if ($whereRet === 0 && !empty($whereOut[0])) {
+        $ffmpeg = trim($whereOut[0]);
+        wlog("Found ffmpeg in PATH: $ffmpeg");
+    }
+}
+
+if (!$ffmpeg) {
+    wlog("ERROR: ffmpeg not found. Aborting.");
     exit(1);
+}
+
+// ── Check if ANY ffmpeg is already running (via wmic) ─────────────────────
+function isFFmpegRunning() {
+    exec('wmic process where "name=\'ffmpeg.exe\'" get ProcessId /FORMAT:LIST 2>NUL', $out, $ret);
+    foreach ($out as $line) {
+        if (stripos($line, 'ProcessId=') !== false) {
+            $pid = (int) trim(str_ireplace('ProcessId=', '', $line));
+            if ($pid > 0) return $pid;
+        }
+    }
+    // Fallback: tasklist
+    exec('tasklist /FI "IMAGENAME eq ffmpeg.exe" /NH 2>NUL', $tOut);
+    foreach ($tOut as $tLine) {
+        if (stripos($tLine, 'ffmpeg.exe') !== false) {
+            // Extract PID from tasklist output (format: name, pid, ...)
+            $parts = preg_split('/\s+/', trim($tLine));
+            if (isset($parts[1]) && is_numeric($parts[1])) return (int)$parts[1];
+            return -1; // running but couldn't get PID
+        }
+    }
+    return 0; // not running
 }
 
 // ── Parse cameras.conf ────────────────────────────────────────────────────
@@ -103,85 +112,65 @@ foreach ($lines as $line) {
 
     $cameraCount++;
     $streamLog = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\stream-' . $table . '.log';
-    $pidFile   = 'C:\\WINDOWS\\Temp\\railshot-' . $table . '.pid';
 
     wlog("Checking camera: $table");
 
-    // ── Check if process is still running ─────────────────────────────────
-    $running = false;
-    if (file_exists($pidFile)) {
-        $pid = (int) file_get_contents($pidFile);
-        if ($pid > 0) {
-            exec("tasklist /FI \"PID eq $pid\" /NH 2>NUL", $taskOut);
-            foreach ($taskOut as $taskLine) {
-                if (strpos($taskLine, (string)$pid) !== false) {
-                    $running = true;
-                    break;
-                }
-            }
-            wlog("  PID $pid is " . ($running ? "running" : "NOT running"));
-        }
-    } else {
-        wlog("  No PID file found — stream not started yet");
-    }
-
-    if ($running) {
-        wlog("  Stream OK — skipping");
+    // ── Check if ffmpeg is already running ────────────────────────────────
+    $runningPid = isFFmpegRunning();
+    if ($runningPid !== 0) {
+        wlog("  FFmpeg already running (PID $runningPid) — skipping");
         continue;
     }
 
-    // ── Start FFmpeg ───────────────────────────────────────────────────────
-    $ytUrl   = "rtmp://a.rtmp.youtube.com/live2/$ytKey";
+    wlog("  FFmpeg not running — starting stream");
+
+    // ── Build FFmpeg command ───────────────────────────────────────────────
+    $ytUrl  = "rtmp://a.rtmp.youtube.com/live2/$ytKey";
     $ffmpegQ = '"' . $ffmpeg . '"';
     $rtspQ   = '"' . $rtspUrl . '"';
     $ytUrlQ  = '"' . $ytUrl . '"';
+    $logQ    = '"' . $streamLog . '"';
 
     $cmd = "$ffmpegQ -loglevel warning -rtsp_transport tcp -stimeout 10000000 "
          . "-i $rtspQ -c:v copy -c:a aac -b:a 128k -ar 44100 "
          . "-f flv -flvflags no_duration_filesize $ytUrlQ";
 
-    wlog("  Starting FFmpeg: $cmd");
+    wlog("  Command: $cmd");
 
-    // Use WScript.Shell to launch detached
+    // ── Launch via WScript.Shell (detached, no window) ────────────────────
+    $launched = false;
     try {
         $wsh = new COM('WScript.Shell');
-        $wshCmd = 'cmd /c start "" /B ' . $cmd . ' >> "' . $streamLog . '" 2>&1';
-        wlog("  WScript command: $wshCmd");
+        $wshCmd = 'cmd /c start "" /B ' . $cmd . ' >> ' . $logQ . ' 2>&1';
         $wsh->Run($wshCmd, 0, false);
-        wlog("  FFmpeg launched via WScript.Shell");
+        $launched = true;
+        wlog("  Launched via WScript.Shell");
     } catch (Exception $e) {
-        wlog("  WScript.Shell failed: " . $e->getMessage() . " — trying popen fallback");
-        $handle = popen('start /B ' . $cmd . ' >> "' . $streamLog . '" 2>&1', 'r');
+        wlog("  WScript.Shell failed: " . $e->getMessage());
+    }
+
+    if (!$launched) {
+        // Fallback: popen
+        $handle = popen('cmd /c start "" /B ' . $cmd . ' >> ' . $logQ . ' 2>&1', 'r');
         if ($handle) {
             pclose($handle);
-            wlog("  FFmpeg launched via popen");
-        } else {
-            wlog("  ERROR: Could not start FFmpeg");
-            continue;
+            $launched = true;
+            wlog("  Launched via popen fallback");
         }
     }
 
-    // Find the new PID
-    sleep(2);
-    exec('tasklist /FI "IMAGENAME eq ffmpeg.exe" /NH /FO CSV 2>NUL', $procs);
-    $newPid = 0;
-    foreach (array_reverse($procs) as $proc) {
-        $cols = str_getcsv($proc);
-        if (isset($cols[1]) && is_numeric(trim($cols[1], '"'))) {
-            $newPid = (int) trim($cols[1], '"');
-            break;
-        }
+    if (!$launched) {
+        wlog("  ERROR: Could not launch FFmpeg");
+        continue;
     }
 
-    file_put_contents($pidFile, $newPid);
-    wlog("  FFmpeg started — PID $newPid saved to $pidFile");
-
-    // Trim stream log
-    if (file_exists($streamLog)) {
-        $streamLines = file($streamLog, FILE_IGNORE_NEW_LINES);
-        if (count($streamLines) > 500) {
-            file_put_contents($streamLog, implode("\n", array_slice($streamLines, -500)) . "\n");
-        }
+    // Verify it started
+    sleep(3);
+    $verifyPid = isFFmpegRunning();
+    if ($verifyPid !== 0) {
+        wlog("  Verified running — PID $verifyPid");
+    } else {
+        wlog("  WARNING: FFmpeg may not have started — check stream log: $streamLog");
     }
 }
 
@@ -190,11 +179,9 @@ if ($cameraCount === 0) {
 }
 
 // Trim watchdog log to last 1000 lines
-if (file_exists($logFile)) {
-    $allLines = file($logFile, FILE_IGNORE_NEW_LINES);
-    if (count($allLines) > 1000) {
-        file_put_contents($logFile, implode("\n", array_slice($allLines, -1000)) . "\n");
-    }
+$allLines = file($logFile, FILE_IGNORE_NEW_LINES);
+if (count($allLines) > 1000) {
+    file_put_contents($logFile, implode("\n", array_slice($allLines, -1000)) . "\n");
 }
 
 wlog("=== Watchdog done ===");
