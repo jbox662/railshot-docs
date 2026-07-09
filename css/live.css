@@ -626,3 +626,82 @@
         justify-content: flex-end;
     }
 }
+
+/* ── Admin Table Switcher (watch page, admin-only) ─────────────────────────── */
+.admin-table-switcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: rgba(0, 168, 232, 0.08);
+    border: 1px solid rgba(0, 168, 232, 0.35);
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+}
+
+.admin-table-switcher.hidden {
+    display: none !important;
+}
+
+.admin-switcher-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a0b4c0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.admin-switcher-badge {
+    background: #00A8E8;
+    color: #000;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.admin-switcher-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-switcher-btn {
+    background: rgba(255,255,255,0.06);
+    color: #cdd6e0;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.admin-switcher-btn:hover {
+    background: rgba(0, 168, 232, 0.18);
+    border-color: #00A8E8;
+    color: #fff;
+}
+
+.admin-switcher-btn.active {
+    background: #00A8E8;
+    border-color: #00A8E8;
+    color: #000;
+    font-weight: 600;
+}
+
+.admin-switcher-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.admin-switcher-status {
+    font-size: 0.78rem;
+    color: #7fa8b8;
+    margin-left: auto;
+}

@@ -53,6 +53,16 @@
                 </div>
             </div>
 
+            <!-- Admin-only table switcher — hidden for regular viewers, shown via JS when admin session detected -->
+            <div id="adminTableSwitcher" class="admin-table-switcher hidden">
+                <div class="admin-switcher-label">
+                    <span class="admin-switcher-badge">Admin</span>
+                    <span>Switch Active Table</span>
+                </div>
+                <div id="adminTableBtns" class="admin-switcher-btns"></div>
+                <span id="adminSwitcherStatus" class="admin-switcher-status"></span>
+            </div>
+
             <div class="live-layout viewer-locked" id="liveLayout">
                 <section class="video-panel shadow-pop" aria-label="Live video player">
                     <div class="video-wrapper">

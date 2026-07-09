@@ -450,6 +450,75 @@
         }
     }
 
+    // ── Admin Table Switcher ────────────────────────────────────────────────────
+    async function initAdminSwitcher() {
+        const switcherEl = document.getElementById('adminTableSwitcher');
+        const btnsEl     = document.getElementById('adminTableBtns');
+        const statusSpan = document.getElementById('adminSwitcherStatus');
+        if (!switcherEl || !btnsEl) return;
+
+        let adminData;
+        try {
+            const res = await fetch('/api/admin-live.php?venue=' + encodeURIComponent(config.venueId || ''));
+            adminData = await res.json();
+        } catch (e) {
+            return; // not admin or network error — stay hidden
+        }
+
+        if (!adminData || !adminData.isAdmin) return;
+
+        // Show the switcher bar
+        switcherEl.classList.remove('hidden');
+
+        function renderBtns(activeId) {
+            btnsEl.innerHTML = '';
+            (adminData.tables || []).forEach(function (t) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'admin-switcher-btn' + (t.id === activeId ? ' active' : '');
+                btn.textContent = t.name;
+                btn.dataset.tableId = t.id;
+                btn.addEventListener('click', async function () {
+                    if (btn.disabled) return;
+                    // Disable all buttons while switching
+                    btnsEl.querySelectorAll('.admin-switcher-btn').forEach(function (b) { b.disabled = true; });
+                    if (statusSpan) statusSpan.textContent = 'Switching…';
+                    try {
+                        const r = await fetch('/api/admin-live.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ venue: config.venueId || '', tableId: t.id }),
+                        });
+                        const result = await r.json();
+                        if (result.ok) {
+                            // Update active state locally and reload stream
+                            adminData.tables.forEach(function (tbl) {
+                                if (tbl.id === t.id && tbl.overlayUrl) {
+                                    config.overlayUrl = tbl.overlayUrl;
+                                }
+                            });
+                            renderBtns(t.id);
+                            // Reload the config so the stream switches
+                            config = await loadConfig();
+                            buildTableList();
+                            applyScoreboardOverlay();
+                            if (statusSpan) statusSpan.textContent = 'Switched to ' + t.name;
+                            setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
+                        } else {
+                            if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
+                        }
+                    } catch (e) {
+                        if (statusSpan) statusSpan.textContent = 'Network error';
+                    }
+                    btnsEl.querySelectorAll('.admin-switcher-btn').forEach(function (b) { b.disabled = false; });
+                });
+                btnsEl.appendChild(btn);
+            });
+        }
+
+        renderBtns(adminData.activeTableId);
+    }
+
     async function init() {
         config = await loadConfig();
 
@@ -463,6 +532,7 @@
         buildTableList();
         initVideoFitControls();
         applyScoreboardOverlay();
+        initAdminSwitcher();
         startConfigPolling();
 
     }
