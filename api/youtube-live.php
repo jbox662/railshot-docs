@@ -98,9 +98,10 @@ if (isset($data['error'])) {
 // Extract video ID from results
 $items = $data['items'] ?? [];
 if (empty($items)) {
-    // No live stream found — cache the "offline" result for 60 seconds (shorter TTL)
+    // No live stream found — cache the "offline" result for 30 seconds only
+    // so that clicking Retry quickly picks up a newly started stream
     $offlineResult = ['ok' => false, 'error' => 'No live stream found for this channel'];
-    file_put_contents($cacheFile, json_encode(array_merge($offlineResult, ['ts' => time()])));
+    file_put_contents($cacheFile, json_encode(array_merge($offlineResult, ['ts' => time() - 270])));
     railshot_json_response($offlineResult);
 }
 
