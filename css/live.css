@@ -733,6 +733,9 @@
 }
 
 /* ── YouTube Live iframe player ─────────────────────────────────────────────── */
+/* The wrapper is 16/9 aspect-ratio so the iframe fills it exactly.
+   We override the wrapper's max-height when a YouTube iframe is present
+   so the video never gets letterboxed by a height cap. */
 .yt-live-iframe {
     position: absolute;
     top: 0;
@@ -743,4 +746,10 @@
     background: #000;
     z-index: 1;
     display: block;
+}
+
+/* When a YouTube iframe is active, let the wrapper grow to its natural 16/9
+   height instead of being capped — this eliminates the side black bars. */
+.video-wrapper:has(.yt-live-iframe) {
+    max-height: none;
 }
