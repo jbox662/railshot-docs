@@ -15,6 +15,97 @@ $WorkerStateFile = Join-Path $WorkerDir 'worker-state.json'
 
 $script:LastProcessedId = ''
 $script:LastRecoveryAt = 0
+$script:ConsecutiveFailures = 0
+$script:GiveUpUntil = 0
+
+function Get-ConfigPath {
+    return Join-Path $RootDir 'App_Data\railshot\config.json'
+}
+
+function Find-CameraFromConfig([string]$TableId) {
+    $configPath = Get-ConfigPath
+    if (-not (Test-Path $configPath)) { return $null }
+    try {
+        $config = Get-Content $configPath -Raw | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+
+    $rtspByName = @{}
+    foreach ($cam in @($config.cameras)) {
+        $name = [string]$cam.name
+        $rtsp = [string]$cam.rtspUrl
+        if ($name -ne '' -and $rtsp -ne '') {
+            $rtspByName[$name] = $rtsp
+        }
+    }
+
+    foreach ($venue in @($config.live.venues)) {
+        foreach ($table in @($venue.tables)) {
+            $id = Sanitize-TableId ([string]$table.id)
+            if ($id -ne $TableId) { continue }
+            $cameraName = [string]$table.cameraName
+            $rtsp = ''
+            if ($cameraName -ne '' -and $rtspByName.ContainsKey($cameraName)) {
+                $rtsp = $rtspByName[$cameraName]
+            }
+            if ($rtsp -eq '') {
+                $rtsp = [string]$table.rtspUrl
+            }
+            $streamKey = [string]$table.streamKey
+            if ($rtsp -ne '' -and $streamKey -ne '') {
+                return [PSCustomObject]@{
+                    table = $id
+                    rtsp  = $rtsp
+                    ytKey = $streamKey
+                }
+            }
+            return $null
+        }
+    }
+    return $null
+}
+
+function Find-Camera([string]$TableId) {
+    $id = Sanitize-TableId $TableId
+    $fromConfig = Find-CameraFromConfig $id
+    if ($fromConfig) { return $fromConfig }
+    foreach ($cam in Parse-Cameras) {
+        if ($cam.table -eq $id) { return $cam }
+    }
+    return $null
+}
+
+function Get-StreamLogTail([string]$Path, [int]$LineCount = 4) {
+    if (-not (Test-Path $Path)) { return '' }
+    try {
+        $tail = @(Get-Content $Path -Tail $LineCount -ErrorAction Stop)
+    } catch {
+        return ''
+    }
+    if ($tail.Count -eq 0) { return '' }
+    $text = ($tail -join ' ').Trim()
+    if ($text.Length -gt 280) {
+        $text = $text.Substring(0, 280) + '...'
+    }
+    return $text
+}
+
+function Build-StartFailureMessage([string]$TableId, $Camera, [string]$StreamLog) {
+    $msg = 'FFmpeg exited right after start - check streaming/stream-' + $TableId + '.log'
+    $port = Get-RtspPort $Camera.rtsp
+    if ($port -ne '') {
+        $msg += ' (RTSP port ' + $port + ')'
+    }
+    if ($TableId -eq 'table2' -and $port -eq '8554') {
+        $msg += ' - table2 should use port 8555'
+    }
+    $hint = Get-StreamLogTail $StreamLog
+    if ($hint -ne '') {
+        $msg += '. ' + $hint
+    }
+    return $msg
+}
 
 function Get-Epoch {
     return [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
@@ -74,14 +165,6 @@ function Parse-Cameras {
         }
     }
     return $cameras
-}
-
-function Find-Camera([string]$TableId) {
-    $id = Sanitize-TableId $TableId
-    foreach ($cam in Parse-Cameras) {
-        if ($cam.table -eq $id) { return $cam }
-    }
-    return $null
 }
 
 function Find-Ffmpeg {
@@ -188,13 +271,15 @@ function Build-FfmpegArgs($Camera) {
     )
 }
 
-function Start-FfmpegDetached($Ffmpeg, $Args, $StreamLog) {
-    $argLine = ($Args | ForEach-Object {
-        if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
-    }) -join ' '
-    $cmd = 'start "" /B "' + $Ffmpeg + '" ' + $argLine + ' >> "' + $StreamLog + '" 2>&1'
-    $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', $cmd -WindowStyle Hidden -PassThru
-    return $null -ne $p
+function Start-FfmpegDetached($Ffmpeg, [string[]]$Args, $StreamLog) {
+    try {
+        $proc = Start-Process -FilePath $Ffmpeg -ArgumentList $Args -WindowStyle Hidden `
+            -RedirectStandardError $StreamLog -PassThru -ErrorAction Stop
+        return $null -ne $proc
+    } catch {
+        Add-Content -Path $StreamLog -Value ('Start-Process failed: ' + $_) -Encoding UTF8
+        return $false
+    }
 }
 
 function Test-FfmpegStarted([int]$MaxMs = 6000) {
@@ -220,13 +305,17 @@ function Start-TableStream([string]$TableId) {
 
     $camera = Find-Camera $TableId
     if (-not $camera) {
-        return @{ ok = $false; error = ('No camera configured for ' + $TableId + ' in cameras.conf - save live settings in admin.') }
+        return @{ ok = $false; error = ('No camera configured for ' + $TableId + ' - set camera and stream key in admin, then Save live settings.') }
     }
 
     $ffmpeg = Find-Ffmpeg
     if (-not $ffmpeg) {
         return @{ ok = $false; error = 'FFmpeg not found on server' }
     }
+
+    $streamLog = Join-Path $StreamingDir ("stream-$TableId.log")
+    $port = Get-RtspPort $camera.rtsp
+    Write-WorkerLog ('Starting ' + $TableId + ' RTSP port ' + $port)
 
     Stop-Ffmpeg
     Start-Sleep -Milliseconds 500
@@ -238,7 +327,6 @@ function Start-TableStream([string]$TableId) {
     $state.tables[$TableId] = 'live'
     Set-StreamState $state
 
-    $streamLog = Join-Path $StreamingDir ("stream-$TableId.log")
     $args = Build-FfmpegArgs $camera
     if (-not (Start-FfmpegDetached $ffmpeg $args $streamLog)) {
         $state.tables[$TableId] = 'stopped'
@@ -250,9 +338,12 @@ function Start-TableStream([string]$TableId) {
         Stop-Ffmpeg
         $state.tables[$TableId] = 'stopped'
         Set-StreamState $state
-        return @{ ok = $false; error = ('FFmpeg exited right after start - check streaming/stream-' + $TableId + '.log') }
+        $failMsg = Build-StartFailureMessage $TableId $camera $streamLog
+        Write-WorkerLog ('Start failed: ' + $failMsg)
+        return @{ ok = $false; error = $failMsg }
     }
 
+    $script:ConsecutiveFailures = 0
     $ffmpegPid = (Get-FfmpegPids | Select-Object -First 1)
     $ws = @{ managedPid = $ffmpegPid; activeTable = $TableId; startedAt = (Get-Epoch) } | ConvertTo-Json -Compress
     Write-Utf8NoBom $WorkerStateFile $ws
@@ -281,13 +372,22 @@ function Stop-AllStreams {
 function Invoke-WorkerCommand($Command) {
     $action = ([string]$Command.action).ToLower().Trim()
     $tableId = Sanitize-TableId ([string]$Command.tableId)
-    if ($action -eq 'stop') { return Stop-AllStreams }
-    if ($action -eq 'start' -and $tableId -ne '') { return (Start-TableStream $tableId) }
+    if ($action -eq 'stop') {
+        $script:ConsecutiveFailures = 0
+        $script:GiveUpUntil = 0
+        return Stop-AllStreams
+    }
+    if ($action -eq 'start' -and $tableId -ne '') {
+        $script:ConsecutiveFailures = 0
+        $script:GiveUpUntil = 0
+        return (Start-TableStream $tableId)
+    }
     return @{ ok = $false; error = 'Unknown command action' }
 }
 
 function Invoke-Recovery {
-    if ((Get-Epoch) - $script:LastRecoveryAt -lt 8) { return }
+    if ((Get-Epoch) -lt $script:GiveUpUntil) { return }
+    if ((Get-Epoch) - $script:LastRecoveryAt -lt 15) { return }
     $script:LastRecoveryAt = Get-Epoch
     if (Test-Path $CommandFile) { return }
 
@@ -306,15 +406,28 @@ function Invoke-Recovery {
             Write-WorkerLog 'No table marked live - stopping stray FFmpeg'
             Stop-Ffmpeg
         }
+        $script:ConsecutiveFailures = 0
         return
     }
 
-    if (-not $ffmpegRunning -or $activeTable -ne $liveTable) {
-        Write-WorkerLog "Recovery: ensuring live table $liveTable"
-        $result = Start-TableStream $liveTable
-        if (-not $result.ok) {
-            Write-WorkerLog ('Recovery failed: ' + $result.error)
-        }
+    if ($ffmpegRunning -and $activeTable -eq $liveTable) {
+        $script:ConsecutiveFailures = 0
+        return
+    }
+
+    if ($script:ConsecutiveFailures -ge 3) {
+        Write-WorkerLog ('Giving up on ' + $liveTable + ' after 3 failures - going off air for 2 minutes')
+        Stop-AllStreams
+        $script:GiveUpUntil = (Get-Epoch) + 120
+        $script:ConsecutiveFailures = 0
+        return
+    }
+
+    Write-WorkerLog ('Recovery: ensuring live table ' + $liveTable)
+    $result = Start-TableStream $liveTable
+    if (-not $result.ok) {
+        $script:ConsecutiveFailures++
+        Write-WorkerLog ('Recovery failed (' + $script:ConsecutiveFailures + '/3): ' + $result.error)
     }
 }
 

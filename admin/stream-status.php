@@ -112,6 +112,26 @@ header('Content-Type: text/html; charset=utf-8');
         </table>
     <?php endforeach; ?>
 
+    <h3>Recent FFmpeg logs</h3>
+    <?php foreach (railshot_normalize_venues($config['live'] ?? []) as $venue):
+        foreach ($venue['tables'] ?? [] as $table):
+            if (empty($table['id'])) continue;
+            $id = railshot_sanitize_table_id($table['id']);
+            $logPath = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'streaming' . DIRECTORY_SEPARATOR . 'stream-' . $id . '.log';
+    ?>
+        <h4><?php echo htmlspecialchars($table['name'] ?? $id); ?> <code>stream-<?php echo htmlspecialchars($id); ?>.log</code></h4>
+        <?php if (file_exists($logPath)):
+            $lines = @file($logPath, FILE_IGNORE_NEW_LINES);
+            $tail = is_array($lines) ? array_slice($lines, -8) : [];
+        ?>
+            <pre style="background:#1a1a1a;padding:12px;overflow:auto;max-height:200px;font-size:12px;"><?php
+                echo htmlspecialchars($tail !== [] ? implode("\n", $tail) : '(empty)');
+            ?></pre>
+        <?php else: ?>
+            <p class="bad">Log file not found.</p>
+        <?php endif; ?>
+    <?php endforeach; endforeach; ?>
+
     <h3>Registered cameras (Admin &rarr; Cameras)</h3>
     <?php if (empty($config['cameras'])): ?>
         <p class="bad">No cameras in config — add them on <a href="/admin/cameras.php">Cameras page</a>.</p>
