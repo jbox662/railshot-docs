@@ -110,8 +110,10 @@ header('Content-Type: text/html; charset=utf-8');
         </ul>
     <?php endif; ?>
 
-    <p style="color:#fbbf24;margin-top:1.5rem"><strong>Still seeing camera 1 after switching?</strong>
-        Check that table2 uses RTSP port <strong>8555</strong> (not 8554), has its <strong>own YouTube stream key</strong>,
-        and delete old Windows scheduled tasks: <code>schtasks /delete /tn "RailShot-table1" /f</code></p>
+    <p style="color:#fbbf24;margin-top:1.5rem"><strong>FFmpeg won&rsquo;t stop when switching tables?</strong>
+        On the VPS, right-click <code>streaming/install-kill-task.bat</code> &rarr; <strong>Run as administrator</strong> (one time).
+        Also delete old <code>RailShot-table1</code> / <code>RailShot-table2</code> scheduled tasks.</p>
+    <p style="color:#fbbf24"><strong>Wrong camera?</strong>
+        table1 = RTSP port <strong>8554</strong>, table2 = port <strong>8555</strong>. Each table needs its own YouTube stream key.</p>
 </body>
 </html>

@@ -62,8 +62,7 @@ function railshot_stream_table_desired(string $tableId): string
 /** @return array{ok:bool,error?:string,action?:string} */
 function railshot_stream_stop_all(): array
 {
-    railshot_streaming_kill_ffmpeg();
-    railshot_streaming_wait_for_ffmpeg_exit(6000);
+    railshot_streaming_force_stop_ffmpeg(15000);
 
     $state = railshot_stream_load_state();
     foreach (array_keys($state['tables']) as $tableId) {
@@ -94,11 +93,12 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'FFmpeg not found on server'];
     }
 
-    railshot_streaming_kill_ffmpeg();
-    if (!railshot_streaming_wait_for_ffmpeg_exit(6000)) {
+    if (!railshot_streaming_force_stop_ffmpeg(15000)) {
         return [
             'ok' => false,
-            'error' => 'Previous FFmpeg did not stop — end ffmpeg.exe in Task Manager on the VPS, then try again',
+            'error' => 'FFmpeg is still running on the VPS (often started as SYSTEM). '
+                . 'On the VPS, run streaming/install-kill-task.bat as Administrator once, '
+                . 'or end ffmpeg.exe in Task Manager, then try again.',
         ];
     }
 

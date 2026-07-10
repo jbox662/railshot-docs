@@ -86,20 +86,27 @@ function railshot_streaming_find_ffmpeg(): ?string
     return null;
 }
 
-function railshot_streaming_is_ffmpeg_running(): int
+/** @return list<int> */
+function railshot_streaming_list_ffmpeg_pids(): array
 {
     exec('tasklist /FI "IMAGENAME eq ffmpeg.exe" /NH 2>NUL', $tOut);
+    $pids = [];
     foreach ($tOut as $tLine) {
-        if (stripos($tLine, 'ffmpeg.exe') !== false) {
-            $parts = preg_split('/\s+/', trim($tLine));
-            if (isset($parts[1]) && is_numeric($parts[1])) {
-                return (int) $parts[1];
-            }
-            return -1;
+        if (stripos($tLine, 'ffmpeg.exe') === false) {
+            continue;
+        }
+        $parts = preg_split('/\s+/', trim($tLine));
+        if (isset($parts[1]) && is_numeric($parts[1])) {
+            $pids[] = (int) $parts[1];
         }
     }
+    return $pids;
+}
 
-    return 0;
+function railshot_streaming_is_ffmpeg_running(): int
+{
+    $pids = railshot_streaming_list_ffmpeg_pids();
+    return $pids[0] ?? 0;
 }
 
 /** Wait until no ffmpeg.exe process remains (after kill). */
@@ -148,26 +155,60 @@ function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
     }
 }
 
+function railshot_streaming_run_system_kill(): void
+{
+    exec('schtasks /run /tn "RailShot-KillFFmpeg" 2>NUL', $out, $ret);
+    if ($ret !== 0) {
+        $cmd = __DIR__ . DIRECTORY_SEPARATOR . 'kill-ffmpeg.cmd';
+        if (file_exists($cmd)) {
+            exec('cmd /c "' . $cmd . '" 2>NUL');
+        }
+    }
+    usleep(1200000);
+}
+
 function railshot_streaming_kill_ffmpeg(): void
 {
     railshot_streaming_stop_scheduled_tasks();
-    for ($attempt = 0; $attempt < 8; $attempt++) {
-        // /T kills child processes (cmd wrappers left by start /B)
+    for ($attempt = 0; $attempt < 10; $attempt++) {
+        foreach (railshot_streaming_list_ffmpeg_pids() as $pid) {
+            exec('taskkill /F /T /PID ' . $pid . ' 2>NUL');
+        }
         exec('taskkill /F /T /IM ffmpeg.exe 2>NUL');
         if (railshot_streaming_is_ffmpeg_running() === 0) {
             break;
         }
         usleep(400000);
     }
+    if (railshot_streaming_is_ffmpeg_running() !== 0) {
+        railshot_streaming_run_system_kill();
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            if (railshot_streaming_is_ffmpeg_running() === 0) {
+                break;
+            }
+            usleep(500000);
+        }
+    }
     usleep(300000);
 }
 
-/** Stop legacy Task Scheduler jobs that auto-restart table1 FFmpeg and override Go Live. */
+/** @return bool true when no ffmpeg.exe remains */
+function railshot_streaming_force_stop_ffmpeg(int $maxMs = 15000): bool
+{
+    railshot_streaming_kill_ffmpeg();
+    if (railshot_streaming_wait_for_ffmpeg_exit($maxMs)) {
+        return true;
+    }
+    railshot_streaming_run_system_kill();
+    return railshot_streaming_wait_for_ffmpeg_exit(10000);
+}
+
+/** Stop legacy Task Scheduler stream jobs that auto-restart FFmpeg and override Go Live. */
 function railshot_streaming_stop_scheduled_tasks(): void
 {
     exec('schtasks /query /fo TABLE /nh 2>NUL', $out);
     foreach ($out as $line) {
-        if (preg_match('/(RailShot-\S+)/i', $line, $m)) {
+        if (preg_match('/(RailShot-table\S+)/i', $line, $m)) {
             exec('schtasks /end /tn "' . $m[1] . '" 2>NUL');
         }
     }
