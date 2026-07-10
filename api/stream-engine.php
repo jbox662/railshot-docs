@@ -81,9 +81,11 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'Invalid table id'];
     }
 
-    $camera = railshot_streaming_find_camera($tableId);
+    railshot_sync_cameras_conf();
+
+    $camera = railshot_resolve_stream_camera($tableId);
     if ($camera === null) {
-        return ['ok' => false, 'error' => 'Camera not found in streaming/cameras.conf'];
+        return ['ok' => false, 'error' => railshot_stream_camera_missing_reason($tableId)];
     }
 
     $ffmpeg = railshot_streaming_find_ffmpeg();
@@ -108,7 +110,7 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'Failed to launch FFmpeg'];
     }
 
-    sleep(2);
+    sleep(1);
     if (railshot_streaming_is_ffmpeg_running() === 0) {
         $state['tables'][$tableId] = 'stopped';
         railshot_stream_save_state($state);

@@ -459,9 +459,25 @@
             const r = await fetch('/api/admin-live.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ venue: config.venueId || '', tableId: tableId }),
             });
-            return r.json();
+            const text = await r.text();
+            let data = null;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (parseErr) {
+                throw new Error('Server returned an invalid response (HTTP ' + r.status + '). Upload the latest api/ files.');
+            }
+            if (!r.ok) {
+                throw new Error((data && data.error) || ('Request failed (HTTP ' + r.status + ')'));
+            }
+            return data || {};
+        }
+
+        function showSwitcherError(message) {
+            console.error('RailShot Go Live:', message);
+            if (statusSpan) statusSpan.textContent = 'Error: ' + message;
         }
 
         function renderBtns(activeId) {
@@ -474,33 +490,40 @@
                 btn.className = 'admin-switcher-btn' + (t.id === activeId ? ' active' : '');
                 btn.textContent = (t.id === activeId ? '\u25cf ' : '\u25b6 Go Live: ') + t.name;
                 btn.dataset.tableId = t.id;
+                if (t.streamReady === false && t.streamIssue) {
+                    btn.title = t.streamIssue;
+                }
                 btn.addEventListener('click', async function () {
                     if (btn.disabled) return;
                     btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
                     if (statusSpan) statusSpan.textContent = 'Starting\u2026';
                     try {
                         const result = await postAdminLive(t.id);
-                        if (result.ok) {
-                            if (result.stream && result.stream.ok === false) {
-                                throw new Error(result.stream.error || 'FFmpeg failed to start');
+                        if (!result.ok) {
+                            showSwitcherError(result.error || 'Go Live failed');
+                            return;
+                        }
+                        if (result.stream && result.stream.ok === false) {
+                            showSwitcherError(result.stream.error || 'FFmpeg failed to start');
+                            return;
+                        }
+                        adminData.tables.forEach(function (tbl) {
+                            if (tbl.id === t.id && tbl.overlayUrl) {
+                                config.overlayUrl = tbl.overlayUrl;
                             }
-                            adminData.tables.forEach(function (tbl) {
-                                if (tbl.id === t.id && tbl.overlayUrl) {
-                                    config.overlayUrl = tbl.overlayUrl;
-                                }
-                            });
-                            adminData.activeTableId = t.id;
-                            renderBtns(t.id);
-                            config = await loadConfig();
+                        });
+                        adminData.activeTableId = t.id;
+                        renderBtns(t.id);
+                        const nextConfig = await loadConfig();
+                        if (nextConfig) {
+                            config = nextConfig;
                             buildTableList();
                             applyScoreboardOverlay();
-                            if (statusSpan) statusSpan.textContent = 'Now live: ' + t.name;
-                            setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
-                        } else {
-                            if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
                         }
+                        if (statusSpan) statusSpan.textContent = 'Now live: ' + t.name;
+                        setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
                     } catch (e) {
-                        if (statusSpan) statusSpan.textContent = 'Network error';
+                        showSwitcherError(e && e.message ? e.message : 'Could not reach server');
                     }
                     btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
                 });
@@ -518,25 +541,28 @@
                 if (statusSpan) statusSpan.textContent = 'Stopping\u2026';
                 try {
                     const result = await postAdminLive('__none__');
-                    if (result.ok) {
-                        if (result.stream && result.stream.ok === false) {
-                            throw new Error(result.stream.error || 'FFmpeg failed to stop');
-                        }
-                        adminData.activeTableId = '';
-                        renderBtns('');
-                        config = await loadConfig();
-                        // Show offline overlay to the admin too
-                        cleanupPlayer();
-                        showOverlay('Stream stopped. Viewers see an offline message.', true);
-                        setStatus('error', 'Off Air');
-                        setProtocolBadge('');
-                        if (statusSpan) statusSpan.textContent = 'Stream stopped.';
-                        setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
-                    } else {
-                        if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
+                    if (!result.ok) {
+                        showSwitcherError(result.error || 'Stop failed');
+                        return;
                     }
+                    if (result.stream && result.stream.ok === false) {
+                        showSwitcherError(result.stream.error || 'FFmpeg failed to stop');
+                        return;
+                    }
+                    adminData.activeTableId = '';
+                    renderBtns('');
+                    const nextConfig = await loadConfig();
+                    if (nextConfig) {
+                        config = nextConfig;
+                    }
+                    cleanupPlayer();
+                    showOverlay('Stream stopped. Viewers see an offline message.', true);
+                    setStatus('error', 'Off Air');
+                    setProtocolBadge('');
+                    if (statusSpan) statusSpan.textContent = 'Stream stopped.';
+                    setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
                 } catch (e) {
-                    if (statusSpan) statusSpan.textContent = 'Network error';
+                    showSwitcherError(e && e.message ? e.message : 'Could not reach server');
                 }
                 btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
             });

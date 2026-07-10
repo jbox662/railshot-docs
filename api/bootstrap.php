@@ -490,3 +490,150 @@ function railshot_read_json_body(): array
     $data = json_decode($raw ?: '', true);
     return is_array($data) ? $data : [];
 }
+
+/** @return array<string, string> camera display name => RTSP URL */
+function railshot_camera_rtsp_by_name(): array
+{
+    $config = railshot_load_config();
+    $rtspByName = [];
+    foreach ($config['cameras'] ?? [] as $cam) {
+        if (!is_array($cam)) {
+            continue;
+        }
+        $name = trim($cam['name'] ?? '');
+        $rtsp = trim($cam['rtspUrl'] ?? '');
+        if ($name !== '' && $rtsp !== '') {
+            $rtspByName[$name] = $rtsp;
+        }
+    }
+    return $rtspByName;
+}
+
+/** Regenerate streaming/cameras.conf from admin config (best-effort). */
+function railshot_sync_cameras_conf(): bool
+{
+    $config = railshot_load_config();
+    $rtspByName = railshot_camera_rtsp_by_name();
+    $venues = railshot_normalize_venues($config['live'] ?? []);
+
+    $confLines = [
+        '# ═══════════════════════════════════════════════════════════════════════════',
+        '# RailShot TV — Camera Streaming Config',
+        '# Auto-generated from Admin Panel — do not edit manually',
+        '# ═══════════════════════════════════════════════════════════════════════════',
+        '#',
+        '# FORMAT:  TABLE_ID | RTSP_URL | YOUTUBE_STREAM_KEY',
+        '#',
+    ];
+
+    foreach ($venues as $venue) {
+        foreach ($venue['tables'] ?? [] as $table) {
+            if (!is_array($table)) {
+                continue;
+            }
+            $id = railshot_sanitize_table_id($table['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $rtsp = $rtspByName[trim($table['cameraName'] ?? '')] ?? trim($table['rtspUrl'] ?? '');
+            $streamKey = trim($table['streamKey'] ?? '');
+            if ($rtsp !== '' && $streamKey !== '') {
+                $confLines[] = $id . ' | ' . $rtsp . ' | ' . $streamKey;
+            }
+        }
+    }
+
+    $confPath = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'streaming' . DIRECTORY_SEPARATOR . 'cameras.conf';
+    $confDir = dirname($confPath);
+    if (!is_dir($confDir)) {
+        mkdir($confDir, 0755, true);
+    }
+
+    return file_put_contents($confPath, implode("\n", $confLines) . "\n", LOCK_EX) !== false;
+}
+
+/** @return array{table:string,rtsp:string,ytKey:string}|null */
+function railshot_resolve_stream_camera(string $tableId): ?array
+{
+    $tableId = railshot_sanitize_table_id($tableId);
+    if ($tableId === '') {
+        return null;
+    }
+
+    $config = railshot_load_config();
+    $rtspByName = railshot_camera_rtsp_by_name();
+
+    foreach (railshot_normalize_venues($config['live'] ?? []) as $venue) {
+        foreach ($venue['tables'] ?? [] as $table) {
+            if (!is_array($table)) {
+                continue;
+            }
+            $id = railshot_sanitize_table_id($table['id'] ?? '');
+            if ($id !== $tableId) {
+                continue;
+            }
+
+            $streamKey = trim($table['streamKey'] ?? '');
+            $cameraName = trim($table['cameraName'] ?? '');
+            $rtsp = $rtspByName[$cameraName] ?? trim($table['rtspUrl'] ?? '');
+
+            if ($rtsp !== '' && $streamKey !== '') {
+                return ['table' => $id, 'rtsp' => $rtsp, 'ytKey' => $streamKey];
+            }
+
+            return null;
+        }
+    }
+
+    if (!function_exists('railshot_streaming_find_camera')) {
+        $common = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'streaming' . DIRECTORY_SEPARATOR . 'streaming-common.php';
+        if (file_exists($common)) {
+            require_once $common;
+        }
+    }
+
+    return function_exists('railshot_streaming_find_camera')
+        ? railshot_streaming_find_camera($tableId)
+        : null;
+}
+
+function railshot_stream_camera_missing_reason(string $tableId): string
+{
+    $tableId = railshot_sanitize_table_id($tableId);
+    if ($tableId === '') {
+        return 'Invalid table id';
+    }
+
+    $config = railshot_load_config();
+    $rtspByName = railshot_camera_rtsp_by_name();
+
+    foreach (railshot_normalize_venues($config['live'] ?? []) as $venue) {
+        foreach ($venue['tables'] ?? [] as $table) {
+            if (!is_array($table)) {
+                continue;
+            }
+            $id = railshot_sanitize_table_id($table['id'] ?? '');
+            if ($id !== $tableId) {
+                continue;
+            }
+
+            $streamKey = trim($table['streamKey'] ?? '');
+            $cameraName = trim($table['cameraName'] ?? '');
+            $rtsp = $rtspByName[$cameraName] ?? trim($table['rtspUrl'] ?? '');
+
+            if ($streamKey === '') {
+                return 'Table "' . $tableId . '" needs a YouTube stream key. Set it in Admin → Venues and click Save live settings.';
+            }
+            if ($cameraName === '' && $rtsp === '') {
+                return 'Table "' . $tableId . '" needs a camera selected. Open Admin → Venues, choose a camera for this table, and save.';
+            }
+            if ($rtsp === '') {
+                return 'Camera "' . $cameraName . '" has no RTSP URL. Add it on Admin → Cameras, then save live settings.';
+            }
+
+            return 'Camera settings for table "' . $tableId . '" are incomplete. Open Admin, verify camera + stream key, and save live settings.';
+        }
+    }
+
+    return 'Table "' . $tableId . '" not found in streaming/cameras.conf or admin config.';
+}

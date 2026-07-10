@@ -50,6 +50,8 @@ if (!railshot_save_config($config)) {
     railshot_json_response(['error' => 'Failed to save config'], 500);
 }
 
+railshot_sync_cameras_conf();
+
 $streamResult = railshot_stream_apply_active_table($newActiveId);
 
 railshot_json_response([

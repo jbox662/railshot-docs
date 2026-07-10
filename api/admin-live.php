@@ -44,10 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (empty($table['id']) || empty($table['name'])) {
             continue;
         }
+        $cam = railshot_resolve_stream_camera($table['id']);
         $tables[] = [
-            'id'         => $table['id'],
-            'name'       => $table['name'],
-            'overlayUrl' => trim($table['overlayUrl'] ?? ''),
+            'id'          => $table['id'],
+            'name'        => $table['name'],
+            'overlayUrl'  => trim($table['overlayUrl'] ?? ''),
+            'streamReady' => $cam !== null,
+            'streamIssue' => $cam === null
+                ? railshot_stream_camera_missing_reason($table['id'])
+                : '',
         ];
     }
 
@@ -108,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!railshot_save_config($config)) {
         railshot_json_response(['error' => 'Failed to save config'], 500);
     }
+
+    railshot_sync_cameras_conf();
 
     $streamResult = railshot_stream_apply_active_table($newActiveId);
 

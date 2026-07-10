@@ -223,7 +223,7 @@
                 btn.textContent = '\u25B6 Go Live';
             }
         } catch (err) {
-            alert('Could not connect to server.');
+            alert(err && err.message ? err.message : 'Could not connect to server.');
             btn.disabled = false;
             btn.textContent = '\u25B6 Go Live';
         }

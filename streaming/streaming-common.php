@@ -88,16 +88,6 @@ function railshot_streaming_find_ffmpeg(): ?string
 
 function railshot_streaming_is_ffmpeg_running(): int
 {
-    exec('wmic process where "name=\'ffmpeg.exe\'" get ProcessId /FORMAT:LIST 2>NUL', $out);
-    foreach ($out as $line) {
-        if (stripos($line, 'ProcessId=') !== false) {
-            $pid = (int) trim(str_ireplace('ProcessId=', '', $line));
-            if ($pid > 0) {
-                return $pid;
-            }
-        }
-    }
-
     exec('tasklist /FI "IMAGENAME eq ffmpeg.exe" /NH 2>NUL', $tOut);
     foreach ($tOut as $tLine) {
         if (stripos($tLine, 'ffmpeg.exe') !== false) {
@@ -108,6 +98,17 @@ function railshot_streaming_is_ffmpeg_running(): int
             return -1;
         }
     }
+
+    exec('wmic process where "name=\'ffmpeg.exe\'" get ProcessId /FORMAT:LIST 2>NUL', $out);
+    foreach ($out as $line) {
+        if (stripos($line, 'ProcessId=') !== false) {
+            $pid = (int) trim(str_ireplace('ProcessId=', '', $line));
+            if ($pid > 0) {
+                return $pid;
+            }
+        }
+    }
+
     return 0;
 }
 
