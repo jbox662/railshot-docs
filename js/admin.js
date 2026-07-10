@@ -2,6 +2,18 @@
     const messageEl = document.getElementById('adminMessage');
     const venuesContainer = document.getElementById('venuesContainer');
     let venues = Array.isArray(window.RAILSHOT_ADMIN_VENUES) ? window.RAILSHOT_ADMIN_VENUES : [];
+    let adminCameras = []; // loaded from /admin/api/cameras.php
+
+    // Load cameras list so table cards can show the dropdown
+    fetch('/admin/api/cameras.php', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (result) {
+            if (result.ok && Array.isArray(result.cameras)) {
+                adminCameras = result.cameras;
+                renderVenues(); // re-render so dropdowns are populated
+            }
+        })
+        .catch(function () {});
 
     function showMessage(text, isError) {
         if (!messageEl) return;
@@ -36,25 +48,38 @@
             const activeTableId = venue.activeTableId || (tables[0] && tables[0].id) || '';
 
             const tablesHtml = tables.map(function (table, tableIndex) {
+                // Build camera dropdown options
+                var camOptions = '<option value="">-- Select a camera --</option>' +
+                    adminCameras.map(function (cam) {
+                        var sel = (cam.name === table.cameraName) ? ' selected' : '';
+                        return '<option value="' + escapeHtml(cam.name) + '"' + sel + '>' + escapeHtml(cam.name) + '</option>';
+                    }).join('');
+                if (!adminCameras.length) {
+                    camOptions = '<option value="">No cameras configured — add cameras first</option>';
+                }
                 return (
                     '<div class="admin-table-card admin-nested-table" data-venue="' + venueIndex + '" data-table="' + tableIndex + '">' +
                         '<div class="admin-table-card-header">' +
-                            '<strong>Camera ' + (tableIndex + 1) + '</strong>' +
+                            '<strong>Table ' + (tableIndex + 1) + '</strong>' +
                             '<button type="button" class="admin-remove-btn" data-remove-table data-venue="' + venueIndex + '" data-table="' + tableIndex + '">Remove</button>' +
                         '</div>' +
                         '<div class="admin-table-card-grid">' +
                             '<label>Path ID <input data-venue-field="tables" data-table-field="id" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.id || '') + '" placeholder="table1"></label>' +
                             '<label>Display name <input data-venue-field="tables" data-table-field="name" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.name || '') + '"></label>' +
-                            '<label class="full-width">Description <input data-venue-field="tables" data-table-field="description" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.description || '') + '"></label>' +
+                            '<label class="full-width">Camera' +
+                                '<select data-venue-field="tables" data-table-field="cameraName" data-venue="' + venueIndex + '" data-table="' + tableIndex + '">' + camOptions + '</select>' +
+                                '<span class="admin-field-hint">Select which physical camera this table uses. Add cameras on the <a href="/admin/cameras.php">Cameras page</a>.</span>' +
+                            '</label>' +
                             '<label class="full-width">YouTube Channel ID <input data-venue-field="tables" data-table-field="youtubeChannelId" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeChannelId || '') + '" placeholder="UCxH4xyXjhMNDR_fLuirDOtA">' +
-                                '<span class="admin-field-hint">Enter the YouTube Channel ID (starts with UC...) — found in YouTube Studio &rarr; Settings &rarr; Channel &rarr; Advanced. The system auto-finds the live stream. <strong>Enter this once, never update it again.</strong></span>' +
+                                '<span class="admin-field-hint">Found in YouTube Studio &rarr; Settings &rarr; Channel &rarr; Advanced. Enter once, never change. The system auto-finds the live stream.</span>' +
                             '</label>' +
-                            '<label class="full-width">YouTube URL (manual fallback) <input data-venue-field="tables" data-table-field="youtubeUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.youtubeUrl || '') + '" placeholder="Leave blank if Channel ID is set above">' +
-                                '<span class="admin-field-hint">Optional. Only needed if auto-detection is not working. Paste a youtube.com/live/ID URL here.</span>' +
+                            '<label class="full-width">YouTube Stream Key' +
+                                '<input data-venue-field="tables" data-table-field="streamKey" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.streamKey || '') + '" placeholder="xxxx-xxxx-xxxx-xxxx-xxxx" autocomplete="off" spellcheck="false">' +
+                                '<span class="admin-field-hint">From YouTube Studio &rarr; Go Live &rarr; Stream &rarr; Stream key. Each table needs its own key.</span>' +
                             '</label>' +
-                            '<label class="full-width">Scoreholio Overlay URL (for this table)' +
+                            '<label class="full-width">Scoreholio Overlay URL' +
                                 '<input data-venue-field="tables" data-table-field="overlayUrl" data-venue="' + venueIndex + '" data-table="' + tableIndex + '" value="' + escapeHtml(table.overlayUrl || '') + '" placeholder="https://app.scoreholio.com/v2/billiards/overlay?type=widget-a&amp;account=...&amp;court=' + (tableIndex + 1) + '">' +
-                                '<span class="admin-field-hint">Leave blank to use the venue-level overlay URL. Set this to override with a table-specific scoreboard (e.g. court=' + (tableIndex + 1) + ').</span>' +
+                                '<span class="admin-field-hint">Leave blank to use the venue-level overlay URL.</span>' +
                             '</label>' +
                         '</div>' +
                     '</div>'
@@ -138,6 +163,8 @@
                     description: '',
                     youtubeChannelId: '',
                     youtubeUrl: '',
+                    rtspUrl: '',
+                    streamKey: '',
                     overlayUrl: ''
                 });
                 renderVenues();
@@ -509,9 +536,7 @@
     renderVenues();
     renderStreamControl();
 
-    // ── Camera Streams ──────────────────────────────────────────────────────────────────────────────────
-    var cameraStreams = []; // in-memory list
-    var cameraStreamsContainer = document.getElementById('cameraStreamsContainer');
+    // Camera streams are now managed per-camera-card above — no separate section needed
 
     function renderCameraStreams() {
         if (!cameraStreamsContainer) return;

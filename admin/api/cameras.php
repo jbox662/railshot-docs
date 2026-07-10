@@ -40,22 +40,9 @@ if (!$confFile) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $cameras = [];
 
-    if (file_exists($confFile)) {
-        $lines = file($confFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || $line[0] === '#') continue;
-            $parts = array_map('trim', explode('|', $line));
-            if (count($parts) < 3) continue;
-            [$tableId, $rtspUrl, $streamKey] = $parts;
-            if (!$tableId || !$rtspUrl || !$streamKey) continue;
-            $cameras[] = [
-                'tableId'   => $tableId,
-                'rtspUrl'   => $rtspUrl,
-                'streamKey' => $streamKey,
-            ];
-        }
-    }
+    // Camera list is stored in config.json under cameras[]
+    $config = railshot_load_config();
+    $cameras = $config['cameras'] ?? [];
 
     railshot_json_response(['ok' => true, 'cameras' => $cameras]);
 }
@@ -69,46 +56,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         railshot_json_response(['error' => 'Invalid payload'], 400);
     }
 
-    $lines = [];
-    $lines[] = '# ═══════════════════════════════════════════════════════════════════════════';
-    $lines[] = '# RailShot TV — Camera Streaming Config';
-    $lines[] = '# Managed via Admin Panel — do not edit manually';
-    $lines[] = '# ═══════════════════════════════════════════════════════════════════════════';
-    $lines[] = '#';
-    $lines[] = '# FORMAT:  TABLE_NAME | RTSP_URL | YOUTUBE_STREAM_KEY';
-    $lines[] = '#';
-
-    $written = 0;
+    $cleaned = [];
     foreach ($incoming as $cam) {
         if (!is_array($cam)) continue;
-        $tableId   = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($cam['tableId'] ?? ''));
-        $rtspUrl   = trim($cam['rtspUrl'] ?? '');
-        $streamKey = trim($cam['streamKey'] ?? '');
-
-        if (!$tableId || !$rtspUrl || !$streamKey) continue;
-
-        // Basic RTSP URL sanity check
+        $name    = trim($cam['name'] ?? '');
+        $rtspUrl = trim($cam['rtspUrl'] ?? '');
+        if (!$name || !$rtspUrl) continue;
         if (!preg_match('#^rtsp://#i', $rtspUrl)) {
-            railshot_json_response(['error' => 'RTSP URL for "' . $tableId . '" must start with rtsp://'], 400);
+            railshot_json_response(['error' => 'RTSP URL for "' . htmlspecialchars($name) . '" must start with rtsp://'], 400);
         }
-
-        $lines[] = $tableId . ' | ' . $rtspUrl . ' | ' . $streamKey;
-        $written++;
+        $cleaned[] = ['name' => $name, 'rtspUrl' => $rtspUrl];
     }
 
-    $content = implode("\n", $lines) . "\n";
-
-    // Ensure the streaming directory exists
-    $dir = dirname($confFile);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    $config = railshot_load_config();
+    $config['cameras'] = $cleaned;
+    if (!railshot_save_config($config)) {
+        railshot_json_response(['error' => 'Failed to save cameras'], 500);
     }
 
-    if (file_put_contents($confFile, $content, LOCK_EX) === false) {
-        railshot_json_response(['error' => 'Failed to write cameras.conf — check file permissions'], 500);
-    }
-
-    railshot_json_response(['ok' => true, 'written' => $written]);
+    railshot_json_response(['ok' => true, 'written' => count($cleaned)]);
 }
 
 railshot_json_response(['error' => 'Method not allowed'], 405);

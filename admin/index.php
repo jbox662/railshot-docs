@@ -30,6 +30,7 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         <div class="admin-header-inner">
             <h1>RailShot Admin</h1>
             <div class="admin-header-actions">
+                <a href="/admin/cameras.php" class="admin-link">Cameras</a>
                 <a href="/live.html" target="_blank" class="admin-link">View Live</a>
                 <a href="/" target="_blank" class="admin-link">View Site</a>
                 <a href="/admin/logout.php" class="admin-link">Logout</a>
@@ -105,25 +106,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
                 <button type="button" id="saveYoutubeSettingsBtn" class="btn btn-primary">Save YouTube settings</button>
                 <button type="button" id="testYoutubeApiBtn" class="btn btn-secondary" style="margin-left:12px;">Test API key</button>
                 <span id="youtubeApiTestResult" style="margin-left:12px;font-size:0.9em;"></span>
-            </div>
-        </section>
-
-        <!-- ── Camera Streams ─────────────────────────────────────────── -->
-        <section class="admin-panel" id="cameraStreamsPanel">
-            <h2>Camera streams</h2>
-            <p class="admin-hint">
-                Configure the RTSP URL and YouTube stream key for each physical camera.
-                The watchdog reads this list every minute and automatically starts FFmpeg for any camera that isn't streaming.
-                <strong>No VPS access needed</strong> — add or remove cameras entirely from here.
-            </p>
-            <p class="admin-hint">
-                Get stream keys: <a href="https://studio.youtube.com" target="_blank" rel="noopener">YouTube Studio &rarr; Go Live &rarr; Stream &rarr; Stream key</a>.
-                Each camera needs its own stream key.
-            </p>
-            <div id="cameraStreamsContainer"></div>
-            <div class="admin-actions" style="margin-top:12px;">
-                <button type="button" id="addCameraStreamBtn" class="btn btn-secondary">+ Add camera stream</button>
-                <button type="button" id="saveCameraStreamsBtn" class="btn btn-primary" style="margin-left:12px;">Save camera streams</button>
             </div>
         </section>
 

@@ -40,6 +40,8 @@ if ($section === 'live') {
                 'description' => trim($table['description'] ?? ''),
                 'youtubeChannelId' => trim($table['youtubeChannelId'] ?? ''),
                 'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
+                'cameraName' => trim($table['cameraName'] ?? ''),
+                'streamKey' => trim($table['streamKey'] ?? ''),
                 'overlayUrl' => trim($table['overlayUrl'] ?? ''),
             ];
         }
@@ -84,6 +86,34 @@ if ($section === 'live') {
     if (!railshot_save_config($config)) {
         railshot_json_response(['error' => 'Failed to save config'], 500);
     }
+
+    // ── Auto-write cameras.conf: look up RTSP URL from cameras list by cameraName ──
+    $cameraList = $config['cameras'] ?? [];
+    $rtspByName = [];
+    foreach ($cameraList as $cam) {
+        if (!empty($cam['name']) && !empty($cam['rtspUrl'])) {
+            $rtspByName[$cam['name']] = $cam['rtspUrl'];
+        }
+    }
+    $confLines = [];
+    $confLines[] = '# ═══════════════════════════════════════════════════════════════════════════';
+    $confLines[] = '# RailShot TV — Camera Streaming Config';
+    $confLines[] = '# Auto-generated from Admin Panel — do not edit manually';
+    $confLines[] = '# ═══════════════════════════════════════════════════════════════════════════';
+    $confLines[] = '#';
+    $confLines[] = '# FORMAT:  TABLE_ID | RTSP_URL | YOUTUBE_STREAM_KEY';
+    $confLines[] = '#';
+    foreach ($venues as $v) {
+        foreach ($v['tables'] as $t) {
+            $rtsp = $rtspByName[$t['cameraName'] ?? ''] ?? '';
+            if (!empty($rtsp) && !empty($t['streamKey'])) {
+                $confLines[] = $t['id'] . ' | ' . $rtsp . ' | ' . $t['streamKey'];
+            }
+        }
+    }
+    $confContent = implode("\n", $confLines) . "\n";
+    $confPath = dirname(__DIR__, 2) . '/streaming/cameras.conf';
+    @file_put_contents($confPath, $confContent, LOCK_EX); // best-effort, non-fatal
 
     railshot_json_response(['ok' => true]);
 }
