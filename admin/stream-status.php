@@ -6,6 +6,10 @@
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/stream-engine.php';
 require_once dirname(__DIR__) . '/streaming/streaming-common.php';
+require_once dirname(__DIR__) . '/streaming/stream-worker-common.php';
+
+$worker = railshot_stream_worker_status();
+$ffmpegPids = railshot_streaming_list_ffmpeg_pids();
 
 if (!railshot_admin_exists()) {
     http_response_code(403);
@@ -19,8 +23,7 @@ $rtspByName = railshot_camera_rtsp_by_name();
 $confPath = RAILSHOT_ROOT . DIRECTORY_SEPARATOR . 'streaming' . DIRECTORY_SEPARATOR . 'cameras.conf';
 $confExists = file_exists($confPath);
 $confTables = [];
-if ($confExists && function_exists('railshot_streaming_parse_cameras')) {
-    require_once dirname(__DIR__) . '/streaming/streaming-common.php';
+if ($confExists) {
     foreach (railshot_streaming_parse_cameras($confPath) as $row) {
         $confTables[$row['table']] = true;
     }
@@ -52,6 +55,17 @@ header('Content-Type: text/html; charset=utf-8');
 
     <p>cameras.conf: <?php echo $confExists ? '<span class="ok">found</span>' : '<span class="bad">missing</span>'; ?>
         at <code><?php echo htmlspecialchars($confPath); ?></code></p>
+
+    <h2>Stream worker</h2>
+    <table>
+        <tr><th>Worker running</th><td class="<?php echo $worker['alive'] ? 'ok' : 'bad'; ?>">
+            <?php echo $worker['alive'] ? 'YES' : 'NO — run install-stream-worker.bat as Administrator'; ?>
+        </td></tr>
+        <tr><th>Worker PID</th><td><?php echo $worker['pid'] !== null ? (int) $worker['pid'] : '—'; ?></td></tr>
+        <tr><th>Last heartbeat</th><td><?php echo $worker['ageSec'] !== null ? (int) $worker['ageSec'] . 's ago' : 'never'; ?></td></tr>
+        <tr><th>FFmpeg PIDs</th><td><?php echo $ffmpegPids !== [] ? htmlspecialchars(implode(', ', $ffmpegPids)) : 'none'; ?></td></tr>
+        <tr><th>Live table (state)</th><td><code><?php echo htmlspecialchars(railshot_stream_live_table_id() ?: 'none'); ?></code></td></tr>
+    </table>
 
     <?php foreach (railshot_normalize_venues($config['live'] ?? []) as $venue): ?>
         <h2><?php echo htmlspecialchars($venue['name'] ?? $venue['id'] ?? 'Venue'); ?>
@@ -110,9 +124,9 @@ header('Content-Type: text/html; charset=utf-8');
         </ul>
     <?php endif; ?>
 
-    <p style="color:#fbbf24;margin-top:1.5rem"><strong>FFmpeg won&rsquo;t stop when switching tables?</strong>
-        On the VPS, right-click <code>streaming/install-kill-task.bat</code> &rarr; <strong>Run as administrator</strong> (one time).
-        Also delete old <code>RailShot-table1</code> / <code>RailShot-table2</code> scheduled tasks.</p>
+    <p style="color:#fbbf24;margin-top:1.5rem"><strong>Go Live / table switching not working?</strong>
+        On the VPS, right-click <code>streaming/install-stream-worker.bat</code> &rarr; <strong>Run as administrator</strong> (one time).
+        This installs a background worker that owns FFmpeg — the website no longer tries to kill FFmpeg from IIS.</p>
     <p style="color:#fbbf24"><strong>Wrong camera?</strong>
         table1 = RTSP port <strong>8554</strong>, table2 = port <strong>8555</strong>. Each table needs its own YouTube stream key.</p>
 </body>
