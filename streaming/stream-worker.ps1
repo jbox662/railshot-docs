@@ -275,30 +275,33 @@ function Get-WorkerState() {
     }
 }
 
-function Build-FfmpegLaunchCmd($Ffmpeg, $Camera, $StreamLog) {
+function Build-FfmpegLaunchBat($Ffmpeg, $Camera, $StreamLog, [string]$TableId) {
     $ytKey = [string]$Camera.ytKey
     $rtsp = [string]$Camera.rtsp
     if ([string]::IsNullOrWhiteSpace($ytKey) -or [string]::IsNullOrWhiteSpace($rtsp)) {
         return $null
     }
     $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' + $ytKey.Trim()
-    # Video only (-an): Reolink audio timestamps cause start/stop flapping on YouTube.
-    $ffmpegArgs = '-loglevel warning -fflags +genpts -rtsp_transport tcp -stimeout 10000000 ' +
-        '-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 ' +
-        '-i "' + $rtsp + '" -c:v copy -an ' +
-        '-f flv -flvflags no_duration_filesize "' + $ytUrl + '"'
-    return 'start "" /B "' + $Ffmpeg + '" ' + $ffmpegArgs + ' >> "' + $StreamLog + '" 2>&1'
+    $batPath = Join-Path $StreamingDir ('launch-' + $TableId + '.bat')
+    $lines = @(
+        '@echo off',
+        'cd /d "' + $StreamingDir + '"',
+        'start "" /B "' + $Ffmpeg + '" -loglevel warning -fflags +genpts -rtsp_transport tcp -stimeout 10000000 -i "' + $rtsp + '" -c:v copy -an -f flv -flvflags no_duration_filesize "' + $ytUrl + '" >> "' + $StreamLog + '" 2>&1'
+    )
+    Set-Content -Path $batPath -Value ($lines -join "`r`n") -Encoding ASCII
+    return $batPath
 }
 
-function Start-FfmpegDetached($Ffmpeg, $Camera, $StreamLog) {
-    $cmd = Build-FfmpegLaunchCmd $Ffmpeg $Camera $StreamLog
-    if (-not $cmd) {
+function Start-FfmpegDetached($Ffmpeg, $Camera, $StreamLog, [string]$TableId) {
+    $batPath = Build-FfmpegLaunchBat $Ffmpeg $Camera $StreamLog $TableId
+    if (-not $batPath) {
         Add-Content -Path $StreamLog -Value 'ERROR: missing RTSP URL or YouTube stream key' -Encoding UTF8
         return $false
     }
     Add-Content -Path $StreamLog -Value ('--- start ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ---') -Encoding UTF8
+    Write-WorkerLog ('Launch script: ' + $batPath)
     try {
-        $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', $cmd -WindowStyle Hidden -PassThru -ErrorAction Stop
+        $proc = Start-Process -FilePath $batPath -WindowStyle Hidden -PassThru -ErrorAction Stop
         return $null -ne $proc
     } catch {
         Add-Content -Path $StreamLog -Value ('Start-Process failed: ' + $_) -Encoding UTF8
@@ -363,7 +366,7 @@ function Start-TableStream([string]$TableId) {
     $state.tables[$TableId] = 'live'
     Set-StreamState $state
 
-    if (-not (Start-FfmpegDetached $ffmpeg $camera $streamLog)) {
+    if (-not (Start-FfmpegDetached $ffmpeg $camera $streamLog $TableId)) {
         $state.tables[$TableId] = 'stopped'
         Set-StreamState $state
         return @{ ok = $false; error = 'Failed to launch FFmpeg' }
