@@ -108,6 +108,25 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
             </div>
         </section>
 
+        <!-- ── Camera Streams ─────────────────────────────────────────── -->
+        <section class="admin-panel" id="cameraStreamsPanel">
+            <h2>Camera streams</h2>
+            <p class="admin-hint">
+                Configure the RTSP URL and YouTube stream key for each physical camera.
+                The watchdog reads this list every minute and automatically starts FFmpeg for any camera that isn't streaming.
+                <strong>No VPS access needed</strong> — add or remove cameras entirely from here.
+            </p>
+            <p class="admin-hint">
+                Get stream keys: <a href="https://studio.youtube.com" target="_blank" rel="noopener">YouTube Studio &rarr; Go Live &rarr; Stream &rarr; Stream key</a>.
+                Each camera needs its own stream key.
+            </p>
+            <div id="cameraStreamsContainer"></div>
+            <div class="admin-actions" style="margin-top:12px;">
+                <button type="button" id="addCameraStreamBtn" class="btn btn-secondary">+ Add camera stream</button>
+                <button type="button" id="saveCameraStreamsBtn" class="btn btn-primary" style="margin-left:12px;">Save camera streams</button>
+            </div>
+        </section>
+
         <section class="admin-panel">
             <h2>Site content</h2>
             <p class="admin-hint">Updates the homepage hero, contact email, and download note.</p>

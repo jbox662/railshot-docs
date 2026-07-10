@@ -508,4 +508,103 @@
 
     renderVenues();
     renderStreamControl();
+
+    // ── Camera Streams ──────────────────────────────────────────────────────────────────────────────────
+    var cameraStreams = []; // in-memory list
+    var cameraStreamsContainer = document.getElementById('cameraStreamsContainer');
+
+    function renderCameraStreams() {
+        if (!cameraStreamsContainer) return;
+        if (!cameraStreams.length) {
+            cameraStreamsContainer.innerHTML = '<p class="admin-hint">No camera streams configured yet. Click "+ Add camera stream" to add one.</p>';
+            return;
+        }
+        cameraStreamsContainer.innerHTML = cameraStreams.map(function (cam, i) {
+            return '<div class="admin-table-card admin-nested-table" data-cam-idx="' + i + '">' +
+                '<div class="admin-table-card-header">' +
+                    '<strong>Camera ' + (i + 1) + '</strong>' +
+                    '<button type="button" class="admin-remove-btn" data-remove-cam="' + i + '">Remove</button>' +
+                '</div>' +
+                '<div class="admin-table-card-grid">' +
+                    '<label>Table ID <input data-cam-field="tableId" data-cam-idx="' + i + '" value="' + escapeHtml(cam.tableId || '') + '" placeholder="table1">' +
+                        '<span class="admin-field-hint">Must match the Path ID in Venues &amp; cameras above (e.g. table1).</span>' +
+                    '</label>' +
+                    '<label>YouTube Stream Key <input data-cam-field="streamKey" data-cam-idx="' + i + '" value="' + escapeHtml(cam.streamKey || '') + '" placeholder="xxxx-xxxx-xxxx-xxxx-xxxx" autocomplete="off" spellcheck="false">' +
+                        '<span class="admin-field-hint">From YouTube Studio &rarr; Go Live &rarr; Stream &rarr; Stream key. Each camera needs its own key.</span>' +
+                    '</label>' +
+                    '<label class="full-width">Camera RTSP URL <input data-cam-field="rtspUrl" data-cam-idx="' + i + '" value="' + escapeHtml(cam.rtspUrl || '') + '" placeholder="rtsp://admin:password@192.168.1.100:554/stream" autocomplete="off" spellcheck="false">' +
+                        '<span class="admin-field-hint">Full RTSP URL to your Reolink or IP camera. Format: rtsp://user:pass@ip:port/path</span>' +
+                    '</label>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        // Wire remove buttons
+        cameraStreamsContainer.querySelectorAll('[data-remove-cam]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                cameraStreams.splice(Number(btn.getAttribute('data-remove-cam')), 1);
+                renderCameraStreams();
+            });
+        });
+
+        // Wire input fields
+        cameraStreamsContainer.querySelectorAll('[data-cam-field]').forEach(function (input) {
+            input.addEventListener('input', function () {
+                var idx = Number(input.getAttribute('data-cam-idx'));
+                var field = input.getAttribute('data-cam-field');
+                cameraStreams[idx][field] = input.value;
+            });
+        });
+    }
+
+    // Load existing cameras from server on page load
+    (async function loadCameraStreams() {
+        try {
+            var res = await fetch('/admin/api/cameras.php', { credentials: 'same-origin' });
+            var result = await res.json();
+            if (result.ok && Array.isArray(result.cameras)) {
+                cameraStreams = result.cameras;
+                renderCameraStreams();
+            }
+        } catch (err) {
+            // Non-fatal — just show empty state
+            renderCameraStreams();
+        }
+    })();
+
+    document.getElementById('addCameraStreamBtn')?.addEventListener('click', function () {
+        var next = cameraStreams.length + 1;
+        cameraStreams.push({ tableId: 'table' + next, rtspUrl: '', streamKey: '' });
+        renderCameraStreams();
+        // Scroll to the new card
+        var cards = cameraStreamsContainer.querySelectorAll('[data-cam-idx]');
+        if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    document.getElementById('saveCameraStreamsBtn')?.addEventListener('click', async function () {
+        // Validate
+        for (var i = 0; i < cameraStreams.length; i++) {
+            var cam = cameraStreams[i];
+            if (!cam.tableId) { showMessage('Camera ' + (i + 1) + ': Table ID is required.', true); return; }
+            if (!cam.rtspUrl) { showMessage('Camera ' + (i + 1) + ': RTSP URL is required.', true); return; }
+            if (!cam.streamKey) { showMessage('Camera ' + (i + 1) + ': YouTube Stream Key is required.', true); return; }
+            if (!cam.rtspUrl.toLowerCase().startsWith('rtsp://')) {
+                showMessage('Camera ' + (i + 1) + ': RTSP URL must start with rtsp://', true); return;
+            }
+        }
+        try {
+            var res = await fetch('/admin/api/cameras.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ cameras: cameraStreams })
+            });
+            var result = await res.json();
+            if (!res.ok || !result.ok) throw new Error(result.error || 'Save failed');
+            showMessage('Camera streams saved. The watchdog will pick up changes within 1 minute.');
+        } catch (err) {
+            showMessage('Error saving camera streams: ' + err.message, true);
+        }
+    });
+
 })();
