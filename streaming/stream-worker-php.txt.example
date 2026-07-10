@@ -1,0 +1,3 @@
+# Full path to php.exe on this VPS (one line).
+# Create this file by opening /streaming/php-path-setup.php while logged into admin,
+# or run find-php.bat on the VPS.

@@ -126,7 +126,7 @@ header('Content-Type: text/html; charset=utf-8');
 
     <p style="color:#fbbf24;margin-top:1.5rem"><strong>Go Live / table switching not working?</strong>
         On the VPS, right-click <code>streaming/install-stream-worker.bat</code> &rarr; <strong>Run as administrator</strong> (one time).
-        This installs a background worker that owns FFmpeg — the website no longer tries to kill FFmpeg from IIS.</p>
+        If install says php not found, open <a href="/streaming/php-path-setup.php">php-path-setup.php</a> first, then re-run install.</p>
     <p style="color:#fbbf24"><strong>Wrong camera?</strong>
         table1 = RTSP port <strong>8554</strong>, table2 = port <strong>8555</strong>. Each table needs its own YouTube stream key.</p>
 </body>

@@ -4,9 +4,18 @@ REM Installs a background worker that owns FFmpeg — the website only sends com
 
 set "LOOP=%~dp0stream-worker-loop.cmd"
 set "TASK=RailShot-StreamWorker"
+set "PHPCFG=%~dp0stream-worker-php.txt"
 
 echo Installing %TASK% (starts at boot, runs as SYSTEM)...
 echo Loop script: %LOOP%
+
+if not exist "%PHPCFG%" (
+    echo.
+    echo NOTE: stream-worker-php.txt not found.
+    echo Open https://railshottv.com/streaming/php-path-setup.php while logged into admin FIRST,
+    echo or run find-php.bat in this folder, then re-run this installer.
+    echo.
+)
 
 schtasks /delete /tn "%TASK%" /f >nul 2>&1
 schtasks /create /tn "%TASK%" /tr "\"%LOOP%\"" /sc ONSTART /ru SYSTEM /rl HIGHEST /f
@@ -51,9 +60,10 @@ if exist "%HB%" (
         powershell -Command "Get-Content '%WORKLOG%' -Tail 10"
     )
     echo.
-    echo Run streaming\diagnose-worker.bat or open admin/stream-status.php.
+    echo FIX: Open https://railshottv.com/streaming/php-path-setup.php ^(admin login^)
+    echo      Then re-run this installer as Administrator.
 )
 
 echo.
-echo Done. Go Live / table switching now uses the worker instead of IIS killing FFmpeg.
+echo Done.
 pause
