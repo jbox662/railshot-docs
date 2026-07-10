@@ -3,6 +3,7 @@ REM Run once on the VPS as Administrator (right-click -> Run as administrator)
 REM Lets the website stop FFmpeg started by Task Scheduler / SYSTEM when switching tables.
 
 set "SCRIPT=%~dp0kill-ffmpeg.cmd"
+set "FLAG=%~dp0kill-done.flag"
 set "TASK=RailShot-KillFFmpeg"
 
 echo Installing %TASK% scheduled task...
@@ -19,7 +20,13 @@ if errorlevel 1 (
 echo.
 echo SUCCESS. Testing kill task...
 schtasks /run /tn "%TASK%"
-timeout /t 2 /nobreak >nul
+timeout /t 5 /nobreak >nul
+if exist "%FLAG%" (
+    echo Kill task completed ^(kill-done.flag found^).
+    del /f /q "%FLAG%"
+) else (
+    echo WARNING: kill-done.flag not found — upload the latest kill-ffmpeg.cmd and try again.
+)
 
 echo.
 echo Also remove old auto-start stream tasks (they fight Go Live):

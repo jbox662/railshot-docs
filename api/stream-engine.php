@@ -93,12 +93,14 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'FFmpeg not found on server'];
     }
 
-    if (!railshot_streaming_force_stop_ffmpeg(15000)) {
+    if (!railshot_streaming_force_stop_ffmpeg(30000)) {
+        $pids = railshot_streaming_list_ffmpeg_pids();
+        $pidNote = $pids !== [] ? (' (PID ' . implode(', ', $pids) . ')') : '';
         return [
             'ok' => false,
-            'error' => 'FFmpeg is still running on the VPS (often started as SYSTEM). '
-                . 'On the VPS, run streaming/install-kill-task.bat as Administrator once, '
-                . 'or end ffmpeg.exe in Task Manager, then try again.',
+            'error' => 'FFmpeg will not stop on the VPS' . $pidNote . '. '
+                . 'Open Task Manager, end ffmpeg.exe, then try Go Live again. '
+                . 'If this keeps happening, re-run streaming/install-kill-task.bat as Administrator.',
         ];
     }
 

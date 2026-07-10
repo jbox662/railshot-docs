@@ -155,21 +155,54 @@ function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
     }
 }
 
-function railshot_streaming_run_system_kill(): void
+function railshot_streaming_kill_flag_path(): string
 {
+    return __DIR__ . DIRECTORY_SEPARATOR . 'kill-done.flag';
+}
+
+/** @return bool true when ffmpeg.exe is gone */
+function railshot_streaming_run_system_kill(int $maxWaitMs = 25000): bool
+{
+    $flag = railshot_streaming_kill_flag_path();
+    @unlink($flag);
+
     exec('schtasks /run /tn "RailShot-KillFFmpeg" 2>NUL', $out, $ret);
-    if ($ret !== 0) {
-        $cmd = __DIR__ . DIRECTORY_SEPARATOR . 'kill-ffmpeg.cmd';
-        if (file_exists($cmd)) {
-            exec('cmd /c "' . $cmd . '" 2>NUL');
+
+    $cmd = __DIR__ . DIRECTORY_SEPARATOR . 'kill-ffmpeg.cmd';
+    if ($ret !== 0 && file_exists($cmd)) {
+        exec('cmd /c "' . $cmd . '" 2>NUL');
+    }
+
+    $elapsed = 0;
+    $retriggerMs = 0;
+    while ($elapsed < $maxWaitMs) {
+        if (file_exists($flag)) {
+            @unlink($flag);
+            if (railshot_streaming_is_ffmpeg_running() === 0) {
+                return true;
+            }
+        }
+        if (railshot_streaming_is_ffmpeg_running() === 0) {
+            @unlink($flag);
+            return true;
+        }
+        usleep(500000);
+        $elapsed += 500;
+        $retriggerMs += 500;
+        if ($ret === 0 && $retriggerMs >= 4000) {
+            exec('schtasks /run /tn "RailShot-KillFFmpeg" 2>NUL');
+            $retriggerMs = 0;
         }
     }
-    usleep(1200000);
+
+    return railshot_streaming_is_ffmpeg_running() === 0;
 }
 
 function railshot_streaming_kill_ffmpeg(): void
 {
     railshot_streaming_stop_scheduled_tasks();
+    @unlink(railshot_streaming_kill_flag_path());
+
     for ($attempt = 0; $attempt < 10; $attempt++) {
         foreach (railshot_streaming_list_ffmpeg_pids() as $pid) {
             exec('taskkill /F /T /PID ' . $pid . ' 2>NUL');
@@ -180,27 +213,28 @@ function railshot_streaming_kill_ffmpeg(): void
         }
         usleep(400000);
     }
+
     if (railshot_streaming_is_ffmpeg_running() !== 0) {
-        railshot_streaming_run_system_kill();
-        for ($attempt = 0; $attempt < 6; $attempt++) {
-            if (railshot_streaming_is_ffmpeg_running() === 0) {
-                break;
-            }
-            usleep(500000);
-        }
+        railshot_streaming_run_system_kill(20000);
     }
+
     usleep(300000);
 }
 
 /** @return bool true when no ffmpeg.exe remains */
-function railshot_streaming_force_stop_ffmpeg(int $maxMs = 15000): bool
+function railshot_streaming_force_stop_ffmpeg(int $maxMs = 25000): bool
 {
     railshot_streaming_kill_ffmpeg();
-    if (railshot_streaming_wait_for_ffmpeg_exit($maxMs)) {
+    if (railshot_streaming_wait_for_ffmpeg_exit(4000)) {
         return true;
     }
-    railshot_streaming_run_system_kill();
-    return railshot_streaming_wait_for_ffmpeg_exit(10000);
+
+    if (railshot_streaming_run_system_kill($maxMs)) {
+        return true;
+    }
+
+    railshot_streaming_kill_ffmpeg();
+    return railshot_streaming_wait_for_ffmpeg_exit(8000);
 }
 
 /** Stop legacy Task Scheduler stream jobs that auto-restart FFmpeg and override Go Live. */
