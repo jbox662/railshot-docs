@@ -246,35 +246,28 @@ function Get-LiveTableId {
     return ''
 }
 
-function Build-FfmpegArgs($Camera) {
-    $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' + $Camera.ytKey
-    return @(
-        '-loglevel', 'warning',
-        '-rtsp_transport', 'tcp',
-        '-timeout', '10000000',
-        '-i', $Camera.rtsp,
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-b:v', '2500k',
-        '-maxrate', '2500k',
-        '-bufsize', '5000k',
-        '-r', '30',
-        '-g', '60',
-        '-keyint_min', '60',
-        '-sc_threshold', '0',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-ar', '44100',
-        '-f', 'flv',
-        '-flvflags', 'no_duration_filesize',
-        $ytUrl
-    )
+function Build-FfmpegLaunchCmd($Ffmpeg, $Camera, $StreamLog) {
+    $ytKey = [string]$Camera.ytKey
+    $rtsp = [string]$Camera.rtsp
+    if ([string]::IsNullOrWhiteSpace($ytKey) -or [string]::IsNullOrWhiteSpace($rtsp)) {
+        return $null
+    }
+    $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' + $ytKey.Trim()
+    $ffmpegArgs = '-loglevel warning -fflags +genpts -rtsp_transport tcp -stimeout 10000000 ' +
+        '-i "' + $rtsp + '" -c:v copy -c:a aac -b:a 128k -ar 44100 -af aresample=async=1 ' +
+        '-f flv -flvflags no_duration_filesize "' + $ytUrl + '"'
+    return 'start "" /B "' + $Ffmpeg + '" ' + $ffmpegArgs + ' >> "' + $StreamLog + '" 2>&1'
 }
 
-function Start-FfmpegDetached($Ffmpeg, [string[]]$Args, $StreamLog) {
+function Start-FfmpegDetached($Ffmpeg, $Camera, $StreamLog) {
+    $cmd = Build-FfmpegLaunchCmd $Ffmpeg $Camera $StreamLog
+    if (-not $cmd) {
+        Add-Content -Path $StreamLog -Value 'ERROR: missing RTSP URL or YouTube stream key' -Encoding UTF8
+        return $false
+    }
+    Add-Content -Path $StreamLog -Value ('--- start ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ---') -Encoding UTF8
     try {
-        $proc = Start-Process -FilePath $Ffmpeg -ArgumentList $Args -WindowStyle Hidden `
-            -RedirectStandardError $StreamLog -PassThru -ErrorAction Stop
+        $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', $cmd -WindowStyle Hidden -PassThru -ErrorAction Stop
         return $null -ne $proc
     } catch {
         Add-Content -Path $StreamLog -Value ('Start-Process failed: ' + $_) -Encoding UTF8
@@ -282,7 +275,7 @@ function Start-FfmpegDetached($Ffmpeg, [string[]]$Args, $StreamLog) {
     }
 }
 
-function Test-FfmpegStarted([int]$MaxMs = 6000) {
+function Test-FfmpegStarted([int]$MaxMs = 10000) {
     $elapsed = 0
     while ($elapsed -lt $MaxMs) {
         if (-not (Test-FfmpegRunning)) { return $false }
@@ -307,6 +300,9 @@ function Start-TableStream([string]$TableId) {
     if (-not $camera) {
         return @{ ok = $false; error = ('No camera configured for ' + $TableId + ' - set camera and stream key in admin, then Save live settings.') }
     }
+    if ([string]::IsNullOrWhiteSpace([string]$camera.ytKey)) {
+        return @{ ok = $false; error = ('YouTube stream key missing for ' + $TableId + ' in admin.') }
+    }
 
     $ffmpeg = Find-Ffmpeg
     if (-not $ffmpeg) {
@@ -327,14 +323,13 @@ function Start-TableStream([string]$TableId) {
     $state.tables[$TableId] = 'live'
     Set-StreamState $state
 
-    $args = Build-FfmpegArgs $camera
-    if (-not (Start-FfmpegDetached $ffmpeg $args $streamLog)) {
+    if (-not (Start-FfmpegDetached $ffmpeg $camera $streamLog)) {
         $state.tables[$TableId] = 'stopped'
         Set-StreamState $state
         return @{ ok = $false; error = 'Failed to launch FFmpeg' }
     }
 
-    if (-not (Test-FfmpegStarted 6000)) {
+    if (-not (Test-FfmpegStarted 10000)) {
         Stop-Ffmpeg
         $state.tables[$TableId] = 'stopped'
         Set-StreamState $state

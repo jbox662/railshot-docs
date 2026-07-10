@@ -271,10 +271,8 @@ function railshot_streaming_find_camera(string $tableId): ?array
 function railshot_streaming_build_ffmpeg_cmd(string $ffmpeg, array $camera): string
 {
     $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' . $camera['ytKey'];
-    return '"' . $ffmpeg . '" -loglevel warning -rtsp_transport tcp -timeout 10000000 '
-        . '-i "' . $camera['rtsp'] . '" -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k '
-        . '-r 30 -g 60 -keyint_min 60 -sc_threshold 0 '
-        . '-c:a aac -b:a 128k -ar 44100 '
+    return '"' . $ffmpeg . '" -loglevel warning -fflags +genpts -rtsp_transport tcp -stimeout 10000000 '
+        . '-i "' . $camera['rtsp'] . '" -c:v copy -c:a aac -b:a 128k -ar 44100 -af aresample=async=1 '
         . '-f flv -flvflags no_duration_filesize "' . $ytUrl . '"';
 }
 
