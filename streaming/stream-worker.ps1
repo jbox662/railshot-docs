@@ -17,6 +17,8 @@ $script:LastProcessedId = ''
 $script:LastRecoveryAt = 0
 $script:ConsecutiveFailures = 0
 $script:GiveUpUntil = 0
+$script:CrashCount = 0
+$script:NextRetryAt = 0
 
 function Get-ConfigPath {
     return Join-Path $RootDir 'App_Data\railshot\config.json'
@@ -246,6 +248,33 @@ function Get-LiveTableId {
     return ''
 }
 
+function Test-StreamLogFatalError([string]$TableId) {
+    $log = Join-Path $StreamingDir ('stream-' + $TableId + '.log')
+    if (-not (Test-Path $log)) { return $false }
+    try {
+        $tail = @(Get-Content $log -Tail 40 -ErrorAction Stop)
+    } catch {
+        return $false
+    }
+    $text = ($tail -join ' ').ToLower()
+    if ($text -match '401 unauthorized' -or $text -match 'authorization failed') {
+        return $true
+    }
+    if ($text -match 'error opening input file rtsp') {
+        return $true
+    }
+    return $false
+}
+
+function Get-WorkerState() {
+    if (-not (Test-Path $WorkerStateFile)) { return $null }
+    try {
+        return Get-Content $WorkerStateFile -Raw | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+}
+
 function Build-FfmpegLaunchCmd($Ffmpeg, $Camera, $StreamLog) {
     $ytKey = [string]$Camera.ytKey
     $rtsp = [string]$Camera.rtsp
@@ -253,8 +282,10 @@ function Build-FfmpegLaunchCmd($Ffmpeg, $Camera, $StreamLog) {
         return $null
     }
     $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' + $ytKey.Trim()
+    # Video only (-an): Reolink audio timestamps cause start/stop flapping on YouTube.
     $ffmpegArgs = '-loglevel warning -fflags +genpts -rtsp_transport tcp -stimeout 10000000 ' +
-        '-i "' + $rtsp + '" -c:v copy -c:a aac -b:a 128k -ar 44100 -af aresample=async=1 ' +
+        '-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 ' +
+        '-i "' + $rtsp + '" -c:v copy -an ' +
         '-f flv -flvflags no_duration_filesize "' + $ytUrl + '"'
     return 'start "" /B "' + $Ffmpeg + '" ' + $ffmpegArgs + ' >> "' + $StreamLog + '" 2>&1'
 }
@@ -312,6 +343,15 @@ function Start-TableStream([string]$TableId) {
     $streamLog = Join-Path $StreamingDir ("stream-$TableId.log")
     $port = Get-RtspPort $camera.rtsp
     Write-WorkerLog ('Starting ' + $TableId + ' RTSP port ' + $port)
+    if ($TableId -eq 'table1' -and $port -eq '8555') {
+        Write-WorkerLog 'WARNING: table1 is using port 8555 - should be 8554'
+    }
+    if ($TableId -eq 'table2' -and $port -eq '8554') {
+        Write-WorkerLog 'WARNING: table2 is using port 8554 - should be 8555'
+    }
+    if (Test-StreamLogFatalError $TableId) {
+        return @{ ok = $false; error = ('Camera auth/connection failed for ' + $TableId + ' - fix RTSP URL/password in admin (port ' + $port + ')') }
+    }
 
     Stop-Ffmpeg
     Start-Sleep -Milliseconds 500
@@ -339,6 +379,8 @@ function Start-TableStream([string]$TableId) {
     }
 
     $script:ConsecutiveFailures = 0
+    $script:CrashCount = 0
+    $script:NextRetryAt = 0
     $ffmpegPid = (Get-FfmpegPids | Select-Object -First 1)
     $ws = @{ managedPid = $ffmpegPid; activeTable = $TableId; startedAt = (Get-Epoch) } | ConvertTo-Json -Compress
     Write-Utf8NoBom $WorkerStateFile $ws
@@ -370,30 +412,36 @@ function Invoke-WorkerCommand($Command) {
     if ($action -eq 'stop') {
         $script:ConsecutiveFailures = 0
         $script:GiveUpUntil = 0
+        $script:CrashCount = 0
+        $script:NextRetryAt = 0
         return Stop-AllStreams
     }
     if ($action -eq 'start' -and $tableId -ne '') {
         $script:ConsecutiveFailures = 0
         $script:GiveUpUntil = 0
+        $script:CrashCount = 0
+        $script:NextRetryAt = 0
         return (Start-TableStream $tableId)
     }
     return @{ ok = $false; error = 'Unknown command action' }
 }
 
 function Invoke-Recovery {
-    if ((Get-Epoch) -lt $script:GiveUpUntil) { return }
-    if ((Get-Epoch) - $script:LastRecoveryAt -lt 15) { return }
-    $script:LastRecoveryAt = Get-Epoch
+    $now = Get-Epoch
+    if ($now -lt $script:GiveUpUntil) { return }
+    if ($now -lt $script:NextRetryAt) { return }
+    if ($now - $script:LastRecoveryAt -lt 10) { return }
+    $script:LastRecoveryAt = $now
     if (Test-Path $CommandFile) { return }
 
     $liveTable = Get-LiveTableId
     $ffmpegRunning = Test-FfmpegRunning
+    $ws = Get-WorkerState
     $activeTable = ''
-    if (Test-Path $WorkerStateFile) {
-        try {
-            $ws = Get-Content $WorkerStateFile -Raw | ConvertFrom-Json
-            $activeTable = [string]$ws.activeTable
-        } catch {}
+    $startedAt = 0
+    if ($ws) {
+        $activeTable = [string]$ws.activeTable
+        $startedAt = [int]$ws.startedAt
     }
 
     if ($liveTable -eq '') {
@@ -402,27 +450,61 @@ function Invoke-Recovery {
             Stop-Ffmpeg
         }
         $script:ConsecutiveFailures = 0
+        $script:CrashCount = 0
         return
     }
 
     if ($ffmpegRunning -and $activeTable -eq $liveTable) {
-        $script:ConsecutiveFailures = 0
+        if ($startedAt -gt 0 -and ($now - $startedAt) -gt 60) {
+            $script:CrashCount = 0
+            $script:ConsecutiveFailures = 0
+        }
         return
     }
+
+    if (Test-StreamLogFatalError $liveTable) {
+        Write-WorkerLog ('Fatal camera error on ' + $liveTable + ' - going off air until admin fixes RTSP/password')
+        Stop-AllStreams
+        $script:GiveUpUntil = $now + 600
+        $script:CrashCount = 0
+        return
+    }
+
+    if ($ffmpegRunning -eq $false -and $activeTable -eq $liveTable -and $startedAt -gt 0) {
+        $script:CrashCount++
+        $waitSec = [Math]::Min(300, 30 * $script:CrashCount)
+        $script:NextRetryAt = $now + $waitSec
+        Write-WorkerLog ('FFmpeg stopped on ' + $liveTable + ' (crash ' + $script:CrashCount + ') - retry in ' + $waitSec + 's')
+    }
+
+    if ($script:CrashCount -ge 5) {
+        Write-WorkerLog ('Too many crashes on ' + $liveTable + ' - going off air for 5 minutes')
+        Stop-AllStreams
+        $script:GiveUpUntil = $now + 300
+        $script:CrashCount = 0
+        $script:NextRetryAt = 0
+        return
+    }
+
+    if ($now -lt $script:NextRetryAt) { return }
 
     if ($script:ConsecutiveFailures -ge 3) {
-        Write-WorkerLog ('Giving up on ' + $liveTable + ' after 3 failures - going off air for 2 minutes')
+        Write-WorkerLog ('Giving up on ' + $liveTable + ' after 3 start failures - off air 5 minutes')
         Stop-AllStreams
-        $script:GiveUpUntil = (Get-Epoch) + 120
+        $script:GiveUpUntil = $now + 300
         $script:ConsecutiveFailures = 0
+        $script:CrashCount = 0
         return
     }
 
-    Write-WorkerLog ('Recovery: ensuring live table ' + $liveTable)
+    Write-WorkerLog ('Recovery: restarting ' + $liveTable)
     $result = Start-TableStream $liveTable
     if (-not $result.ok) {
         $script:ConsecutiveFailures++
+        $script:NextRetryAt = $now + (45 * $script:ConsecutiveFailures)
         Write-WorkerLog ('Recovery failed (' + $script:ConsecutiveFailures + '/3): ' + $result.error)
+    } else {
+        $script:NextRetryAt = $now + 30
     }
 }
 
