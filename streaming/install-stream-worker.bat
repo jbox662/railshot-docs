@@ -26,14 +26,32 @@ for /f "tokens=1" %%T in ('schtasks /query /fo TABLE /nh 2^>nul ^| findstr /i "R
 echo.
 echo Starting worker now...
 schtasks /run /tn "%TASK%"
-timeout /t 4 /nobreak >nul
+echo Waiting for worker to start...
+timeout /t 12 /nobreak >nul
 
 set "HB=%~dp0..\App_Data\railshot\stream-worker\heartbeat.json"
+set "LOOPLOG=%~dp0stream-worker-loop.log"
+set "WORKLOG=%~dp0worker.log"
+
 if exist "%HB%" (
     echo SUCCESS — worker heartbeat file found.
     type "%HB%"
 ) else (
-    echo WARNING: heartbeat not found yet. Wait 10 seconds and open admin/stream-status.php
+    echo WARNING: heartbeat not found yet.
+    if exist "%LOOPLOG%" (
+        echo.
+        echo stream-worker-loop.log ^(last lines^):
+        powershell -Command "Get-Content '%LOOPLOG%' -Tail 10"
+    ) else (
+        echo No stream-worker-loop.log — scheduled task may not have started. Check Task Scheduler.
+    )
+    if exist "%WORKLOG%" (
+        echo.
+        echo worker.log ^(last lines^):
+        powershell -Command "Get-Content '%WORKLOG%' -Tail 10"
+    )
+    echo.
+    echo Run streaming\diagnose-worker.bat or open admin/stream-status.php.
 )
 
 echo.

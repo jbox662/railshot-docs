@@ -6,8 +6,16 @@
  * Install once: streaming/install-stream-worker.bat (Run as administrator)
  */
 
-require_once __DIR__ . '/streaming-common.php';
 require_once __DIR__ . '/stream-worker-common.php';
+
+// Heartbeat first so install/diagnostics can see the worker even if bootstrap fails.
+file_put_contents(railshot_worker_heartbeat_file(), json_encode([
+    'ts' => time(),
+    'pid' => getmypid(),
+    'phase' => 'starting',
+], JSON_UNESCAPED_SLASHES), LOCK_EX);
+
+require_once __DIR__ . '/streaming-common.php';
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/stream-state.php';
 
