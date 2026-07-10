@@ -99,17 +99,35 @@ function railshot_streaming_is_ffmpeg_running(): int
         }
     }
 
-    exec('wmic process where "name=\'ffmpeg.exe\'" get ProcessId /FORMAT:LIST 2>NUL', $out);
-    foreach ($out as $line) {
-        if (stripos($line, 'ProcessId=') !== false) {
-            $pid = (int) trim(str_ireplace('ProcessId=', '', $line));
-            if ($pid > 0) {
-                return $pid;
-            }
-        }
-    }
-
     return 0;
+}
+
+/** Wait until no ffmpeg.exe process remains (after kill). */
+function railshot_streaming_wait_for_ffmpeg_exit(int $maxMs = 6000): bool
+{
+    $elapsed = 0;
+    while ($elapsed < $maxMs) {
+        if (railshot_streaming_is_ffmpeg_running() === 0) {
+            return true;
+        }
+        usleep(350000);
+        $elapsed += 350;
+    }
+    return railshot_streaming_is_ffmpeg_running() === 0;
+}
+
+/** After launch, confirm ffmpeg stays running for a few seconds. */
+function railshot_streaming_verify_ffmpeg_started(int $maxMs = 5000): bool
+{
+    $elapsed = 0;
+    while ($elapsed < $maxMs) {
+        if (railshot_streaming_is_ffmpeg_running() === 0) {
+            return false;
+        }
+        usleep(500000);
+        $elapsed += 500;
+    }
+    return railshot_streaming_is_ffmpeg_running() !== 0;
 }
 
 function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
@@ -133,8 +151,15 @@ function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
 function railshot_streaming_kill_ffmpeg(): void
 {
     railshot_streaming_stop_scheduled_tasks();
-    exec('taskkill /F /IM ffmpeg.exe 2>NUL');
-    usleep(500000);
+    for ($attempt = 0; $attempt < 8; $attempt++) {
+        // /T kills child processes (cmd wrappers left by start /B)
+        exec('taskkill /F /T /IM ffmpeg.exe 2>NUL');
+        if (railshot_streaming_is_ffmpeg_running() === 0) {
+            break;
+        }
+        usleep(400000);
+    }
+    usleep(300000);
 }
 
 /** Stop legacy Task Scheduler jobs that auto-restart table1 FFmpeg and override Go Live. */

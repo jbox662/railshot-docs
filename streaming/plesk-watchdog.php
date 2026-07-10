@@ -56,9 +56,24 @@ if ($liveTables === []) {
 }
 
 if (railshot_streaming_is_ffmpeg_running() !== 0) {
-    wlog('FFmpeg already running for a live table — skipping');
-    wlog('=== Watchdog done ===');
-    exit(0);
+    $liveTable = $liveTables[0]['table'] ?? '';
+    $state = railshot_streaming_load_state();
+    $desiredTable = '';
+    foreach ($state['tables'] ?? [] as $id => $desired) {
+        if ($desired === 'live') {
+            $desiredTable = $id;
+            break;
+        }
+    }
+    if ($desiredTable !== '' && $desiredTable !== $liveTable) {
+        wlog("FFmpeg running but state says live table is $desiredTable — restarting");
+        railshot_streaming_kill_ffmpeg();
+        railshot_streaming_wait_for_ffmpeg_exit(6000);
+    } else {
+        wlog('FFmpeg already running for a live table — skipping');
+        wlog('=== Watchdog done ===');
+        exit(0);
+    }
 }
 
 $camera = $liveTables[0];

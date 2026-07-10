@@ -63,6 +63,7 @@ function railshot_stream_table_desired(string $tableId): string
 function railshot_stream_stop_all(): array
 {
     railshot_streaming_kill_ffmpeg();
+    railshot_streaming_wait_for_ffmpeg_exit(6000);
 
     $state = railshot_stream_load_state();
     foreach (array_keys($state['tables']) as $tableId) {
@@ -94,6 +95,12 @@ function railshot_stream_start_table(string $tableId): array
     }
 
     railshot_streaming_kill_ffmpeg();
+    if (!railshot_streaming_wait_for_ffmpeg_exit(6000)) {
+        return [
+            'ok' => false,
+            'error' => 'Previous FFmpeg did not stop — end ffmpeg.exe in Task Manager on the VPS, then try again',
+        ];
+    }
 
     $state = railshot_stream_load_state();
     foreach (array_keys($state['tables']) as $id) {
@@ -110,11 +117,11 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'Failed to launch FFmpeg'];
     }
 
-    sleep(1);
-    if (railshot_streaming_is_ffmpeg_running() === 0) {
+    if (!railshot_streaming_verify_ffmpeg_started(5000)) {
+        railshot_streaming_kill_ffmpeg();
         $state['tables'][$tableId] = 'stopped';
         railshot_stream_save_state($state);
-        return ['ok' => false, 'error' => 'FFmpeg did not stay running — check stream log'];
+        return ['ok' => false, 'error' => 'FFmpeg exited right after start — check streaming/stream-' . $tableId . '.log'];
     }
 
     return [
