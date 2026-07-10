@@ -2,9 +2,8 @@
 /**
  * RailShot TV — Stream Watchdog (Windows Plesk / PHP CLI only)
  *
- * Plesk Scheduled Tasks → Run a PHP script → httpdocs/streaming/plesk-watchdog.php
- * Schedule: every minute (* * * * *)
- * Log: httpdocs/streaming/watchdog.log
+ * Only restarts FFmpeg for tables explicitly marked "live" in stream-state.json.
+ * Streams never auto-start on their own — use Go Live in admin or golive.html.
  */
 
 require_once __DIR__ . '/streaming-common.php';
@@ -26,69 +25,60 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 });
 
 wlog('=== Watchdog started ===');
-wlog('PHP version: ' . PHP_VERSION);
-wlog('SAPI: ' . php_sapi_name());
 
 $confFile = railshot_streaming_conf_path();
 if (!file_exists($confFile)) {
     wlog('ERROR: cameras.conf not found at ' . $confFile);
     exit(1);
 }
-wlog('Found cameras.conf at: ' . $confFile);
 
 $ffmpeg = railshot_streaming_find_ffmpeg();
 if (!$ffmpeg) {
     wlog('ERROR: ffmpeg not found. Aborting.');
     exit(1);
 }
-wlog('Found ffmpeg at: ' . $ffmpeg);
 
 $cameras = railshot_streaming_parse_cameras($confFile);
-if (empty($cameras)) {
-    wlog('WARNING: No cameras found in cameras.conf');
+$liveTables = array_values(array_filter(
+    $cameras,
+    static fn(array $camera): bool => railshot_streaming_table_is_live($camera['table'])
+));
+
+if ($liveTables === []) {
+    if (railshot_streaming_is_ffmpeg_running() !== 0) {
+        wlog('No tables marked live — stopping stray FFmpeg');
+        railshot_streaming_kill_ffmpeg();
+    } else {
+        wlog('No tables marked live — nothing to do');
+    }
     wlog('=== Watchdog done ===');
     exit(0);
 }
 
-foreach ($cameras as $camera) {
-    $table = $camera['table'];
-    $rtspUrl = $camera['rtsp'];
-    $ytKey = $camera['ytKey'];
-    $streamLog = __DIR__ . DIRECTORY_SEPARATOR . 'stream-' . $table . '.log';
+if (railshot_streaming_is_ffmpeg_running() !== 0) {
+    wlog('FFmpeg already running for a live table — skipping');
+    wlog('=== Watchdog done ===');
+    exit(0);
+}
 
-    wlog("Checking camera: $table");
+$camera = $liveTables[0];
+$table = $camera['table'];
+$streamLog = __DIR__ . DIRECTORY_SEPARATOR . 'stream-' . $table . '.log';
 
-    $runningPid = railshot_streaming_is_ffmpeg_running();
-    if ($runningPid !== 0) {
-        wlog("  FFmpeg already running (PID $runningPid) — skipping");
-        continue;
-    }
+wlog("Restarting FFmpeg for live table: $table");
 
-    wlog('  FFmpeg not running — starting stream');
+$cmd = railshot_streaming_build_ffmpeg_cmd($ffmpeg, $camera);
+if (!railshot_streaming_launch_detached($cmd, $streamLog)) {
+    wlog('ERROR: Could not launch FFmpeg for ' . $table);
+    exit(1);
+}
 
-    $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' . $ytKey;
-    $cmd = '"' . $ffmpeg . '" -loglevel warning -rtsp_transport tcp -timeout 10000000 '
-        . '-i "' . $rtspUrl . '" -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k '
-        . '-r 30 -g 60 -keyint_min 60 -sc_threshold 0 '
-        . '-c:a aac -b:a 128k -ar 44100 '
-        . '-f flv -flvflags no_duration_filesize "' . $ytUrl . '"';
-
-    wlog('  Launching FFmpeg for ' . $table);
-
-    if (!railshot_streaming_launch_detached($cmd, $streamLog)) {
-        wlog('  ERROR: Could not launch FFmpeg');
-        continue;
-    }
-
-    wlog('  Launch command sent');
-
-    sleep(3);
-    $verifyPid = railshot_streaming_is_ffmpeg_running();
-    if ($verifyPid !== 0) {
-        wlog("  Verified running — PID $verifyPid");
-    } else {
-        wlog('  WARNING: FFmpeg may not have started — check stream log: ' . $streamLog);
-    }
+sleep(3);
+$verifyPid = railshot_streaming_is_ffmpeg_running();
+if ($verifyPid !== 0) {
+    wlog("Verified running — PID $verifyPid");
+} else {
+    wlog('WARNING: FFmpeg may not have started — check ' . $streamLog);
 }
 
 $allLines = @file($logFile, FILE_IGNORE_NEW_LINES);

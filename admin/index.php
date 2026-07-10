@@ -166,6 +166,6 @@ $landingBullets = implode("\n", $landing['bullets'] ?? []);
         window.RAILSHOT_ADMIN_VENUES = <?= json_encode($venues, JSON_UNESCAPED_SLASHES) ?>;
         window.RAILSHOT_YOUTUBE_API_CONFIGURED = <?= json_encode(!empty($youtube['apiKey'])) ?>;
     </script>
-    <script src="/js/admin.js?v=5"></script>
+    <script src="/js/admin.js?v=6"></script>
 </body>
 </html>

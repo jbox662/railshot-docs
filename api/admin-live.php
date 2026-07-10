@@ -8,6 +8,7 @@
  */
 
 require_once dirname(__DIR__) . '/api/bootstrap.php';
+require_once dirname(__DIR__) . '/api/stream-engine.php';
 
 $isAdmin = railshot_is_logged_in();
 
@@ -108,7 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         railshot_json_response(['error' => 'Failed to save config'], 500);
     }
 
-    railshot_json_response(['ok' => true, 'activeTableId' => $newActiveId]);
+    $streamResult = railshot_stream_apply_active_table($newActiveId);
+
+    railshot_json_response([
+        'ok' => true,
+        'activeTableId' => $newActiveId,
+        'stream' => $streamResult,
+    ]);
 }
 
 railshot_json_response(['error' => 'Method not allowed'], 405);

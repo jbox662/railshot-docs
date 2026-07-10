@@ -440,7 +440,7 @@
             const tableButtons = tables.map(function (t) {
                 const isActive = t.id === activeId;
                 return '<button type="button" class="stream-ctrl-table-btn' + (isActive ? ' active' : '') + '" data-venue-id="' + escapeHtml(venue.id || '') + '" data-table-id="' + escapeHtml(t.id) + '">' +
-                    (isActive ? '\u25cf On Air: ' : '') + escapeHtml(t.name) +
+                    (isActive ? '\u25cf On Air: ' : '\u25b6 Go Live: ') + escapeHtml(t.name) +
                 '</button>';
             }).join('');
 
@@ -480,6 +480,10 @@
                     const result = await res.json();
                     if (!res.ok || !result.ok) throw new Error(result.error || 'Failed');
 
+                    if (result.stream && result.stream.ok === false) {
+                        throw new Error(result.stream.error || 'FFmpeg failed to start/stop');
+                    }
+
                     // Update local venues array so the UI reflects the change
                     const newActiveId = result.activeTableId || '';
                     if (window.RAILSHOT_ADMIN_VENUES) {
@@ -488,7 +492,7 @@
                     }
 
                     if (statusEl) {
-                        statusEl.textContent = tableId === '__none__' ? 'Stream stopped.' : 'Now on air: ' + tableId;
+                        statusEl.textContent = tableId === '__none__' ? 'Stream stopped.' : 'Go Live: ' + tableId;
                         setTimeout(function () { if (statusEl) statusEl.textContent = ''; }, 3000);
                     }
                     renderStreamControl();

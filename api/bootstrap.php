@@ -42,7 +42,7 @@ function railshot_default_config(): array
                     'description' => 'Watch live billiard tables from our main streaming venue.',
                     'tagline' => 'Live now',
                     'image' => '/images/logo.png',
-                    'activeTableId' => 'table1',
+                    'activeTableId' => '',
                     'tables' => [
                         [
                             'id' => 'table1',
@@ -267,6 +267,24 @@ function railshot_sanitize_venue_id(string $id): string
     return $id;
 }
 
+function railshot_resolve_active_table_id(mixed $rawActive, array $tableIds, bool $hasActiveKey): string
+{
+    if (!$hasActiveKey) {
+        return $tableIds[0] ?? '';
+    }
+    if ($rawActive === null) {
+        return $tableIds[0] ?? '';
+    }
+    $activeTableId = railshot_sanitize_table_id((string) $rawActive);
+    if ($activeTableId === '') {
+        return '';
+    }
+    if (!in_array($activeTableId, $tableIds, true)) {
+        return $tableIds[0] ?? '';
+    }
+    return $activeTableId;
+}
+
 function railshot_normalize_venues(array $live): array
 {
     if (!empty($live['venues']) && is_array($live['venues'])) {
@@ -287,10 +305,8 @@ function railshot_normalize_venues(array $live): array
                 $tables[] = $table;
             }
             $tableIds = array_map(static fn(array $t): string => railshot_sanitize_table_id($t['id'] ?? ''), $tables);
-            $activeTableId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
-            if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
-                $activeTableId = $tableIds[0] ?? '';
-            }
+            $hasActiveKey = array_key_exists('activeTableId', $venue);
+            $activeTableId = railshot_resolve_active_table_id($venue['activeTableId'] ?? null, $tableIds, $hasActiveKey);
             $venues[] = array_merge($venue, [
                 'id' => $id,
                 'tables' => $tables,

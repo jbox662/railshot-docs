@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/stream-engine.php';
 
 railshot_require_operator_api();
 
@@ -37,6 +38,7 @@ foreach ($venue['tables'] ?? [] as $table) {
         'youtubeUrl'       => $youtubeUrl,
         'youtubeChannelId' => $youtubeChannelId,
         'hasYoutubeSource' => $youtubeChannelId !== '' || $youtubeUrl !== '',
+        'streamDesired'    => railshot_stream_table_desired($table['id']),
         'rtspUrl'          => !empty($table['rtspUrl']) ? '(configured)' : '', // don't expose real RTSP URL
         'overlayUrl'       => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
     ];

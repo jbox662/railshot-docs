@@ -442,15 +442,18 @@
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'admin-switcher-btn' + (t.id === activeId ? ' active' : '');
-                btn.textContent = (t.id === activeId ? '\u25cf ' : '') + t.name;
+                btn.textContent = (t.id === activeId ? '\u25cf ' : '\u25b6 Go Live: ') + t.name;
                 btn.dataset.tableId = t.id;
                 btn.addEventListener('click', async function () {
                     if (btn.disabled) return;
                     btnsEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
-                    if (statusSpan) statusSpan.textContent = 'Switching\u2026';
+                    if (statusSpan) statusSpan.textContent = 'Starting\u2026';
                     try {
                         const result = await postAdminLive(t.id);
                         if (result.ok) {
+                            if (result.stream && result.stream.ok === false) {
+                                throw new Error(result.stream.error || 'FFmpeg failed to start');
+                            }
                             adminData.tables.forEach(function (tbl) {
                                 if (tbl.id === t.id && tbl.overlayUrl) {
                                     config.overlayUrl = tbl.overlayUrl;
@@ -461,7 +464,7 @@
                             config = await loadConfig();
                             buildTableList();
                             applyScoreboardOverlay();
-                            if (statusSpan) statusSpan.textContent = 'Now on air: ' + t.name;
+                            if (statusSpan) statusSpan.textContent = 'Now live: ' + t.name;
                             setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
                         } else {
                             if (statusSpan) statusSpan.textContent = 'Error: ' + (result.error || 'failed');
@@ -486,6 +489,9 @@
                 try {
                     const result = await postAdminLive('__none__');
                     if (result.ok) {
+                        if (result.stream && result.stream.ok === false) {
+                            throw new Error(result.stream.error || 'FFmpeg failed to stop');
+                        }
                         adminData.activeTableId = '';
                         renderBtns('');
                         config = await loadConfig();

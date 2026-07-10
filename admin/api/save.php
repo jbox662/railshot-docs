@@ -44,11 +44,10 @@ if ($section === 'live') {
             ];
         }
 
+
         $tableIds = array_column($tables, 'id');
-        $activeTableId = railshot_sanitize_table_id($venue['activeTableId'] ?? '');
-        if ($activeTableId === '' || !in_array($activeTableId, $tableIds, true)) {
-            $activeTableId = $tableIds[0] ?? '';
-        }
+        $hasActiveKey = array_key_exists('activeTableId', $venue);
+        $activeTableId = railshot_resolve_active_table_id($venue['activeTableId'] ?? null, $tableIds, $hasActiveKey);
 
         $venues[] = [
             'id' => $venueId,

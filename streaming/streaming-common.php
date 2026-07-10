@@ -128,3 +128,59 @@ function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
         return false;
     }
 }
+
+function railshot_streaming_kill_ffmpeg(): void
+{
+    exec('taskkill /F /IM ffmpeg.exe 2>NUL');
+}
+
+/** @return array{table:string,rtsp:string,ytKey:string}|null */
+function railshot_streaming_find_camera(string $tableId): ?array
+{
+    $tableId = strtolower(trim($tableId));
+    foreach (railshot_streaming_parse_cameras(railshot_streaming_conf_path()) as $camera) {
+        if ($camera['table'] === $tableId) {
+            return $camera;
+        }
+    }
+    return null;
+}
+
+function railshot_streaming_build_ffmpeg_cmd(string $ffmpeg, array $camera): string
+{
+    $ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' . $camera['ytKey'];
+    return '"' . $ffmpeg . '" -loglevel warning -rtsp_transport tcp -timeout 10000000 '
+        . '-i "' . $camera['rtsp'] . '" -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k '
+        . '-r 30 -g 60 -keyint_min 60 -sc_threshold 0 '
+        . '-c:a aac -b:a 128k -ar 44100 '
+        . '-f flv -flvflags no_duration_filesize "' . $ytUrl . '"';
+}
+
+/** @return array{tables: array<string, string>} */
+function railshot_streaming_load_state(): array
+{
+    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'App_Data' . DIRECTORY_SEPARATOR . 'railshot' . DIRECTORY_SEPARATOR . 'stream-state.json';
+    if (!file_exists($file)) {
+        return ['tables' => []];
+    }
+    $data = json_decode(file_get_contents($file) ?: '', true);
+    if (!is_array($data)) {
+        return ['tables' => []];
+    }
+    $tables = [];
+    foreach ($data['tables'] ?? [] as $tableId => $desired) {
+        $id = preg_replace('/[^a-z0-9_-]+/', '', strtolower((string) $tableId)) ?? '';
+        if ($id === '') {
+            continue;
+        }
+        $tables[$id] = ($desired === 'live') ? 'live' : 'stopped';
+    }
+    return ['tables' => $tables];
+}
+
+function railshot_streaming_table_is_live(string $tableId): bool
+{
+    $tableId = preg_replace('/[^a-z0-9_-]+/', '', strtolower(trim($tableId))) ?? '';
+    $state = railshot_streaming_load_state();
+    return ($state['tables'][$tableId] ?? 'stopped') === 'live';
+}

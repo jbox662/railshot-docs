@@ -163,7 +163,7 @@
                     '<div class="table-card-source">' + sourceIcon + escHtml(sourceLabel) + '</div>' +
                     (isActive
                         ? '<button class="golive-btn golive-btn-stop" data-action="stop" data-table="' + escHtml(table.id) + '">&#9632; Stop Stream</button>'
-                        : '<button class="golive-btn golive-btn-switch" data-action="switch" data-table="' + escHtml(table.id) + '">&#9654; Switch to This Table</button>'
+                        : '<button class="golive-btn golive-btn-switch" data-action="golive" data-table="' + escHtml(table.id) + '">&#9654; Go Live</button>'
                     ) +
                 '</div>'
             );
@@ -176,8 +176,8 @@
                 var tableId = btn.getAttribute('data-table');
                 if (action === 'stop') {
                     handleStop(tableId, btn);
-                } else if (action === 'switch') {
-                    handleSwitch(tableId, btn);
+                } else if (action === 'golive') {
+                    handleGoLive(tableId, btn);
                 }
             });
         });
@@ -198,9 +198,9 @@
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
-    async function handleSwitch(tableId, btn) {
+    async function handleGoLive(tableId, btn) {
         btn.disabled = true;
-        btn.textContent = 'Switching…';
+        btn.textContent = 'Starting…';
         try {
             var res = await fetch('/api/operator-switch.php', {
                 method: 'POST',
@@ -210,19 +210,22 @@
             });
             var data = await res.json();
             if (res.ok && data.ok) {
+                if (data.stream && data.stream.ok === false) {
+                    alert('On-air updated, but camera ingest failed: ' + (data.stream.error || 'unknown error'));
+                }
                 activeTableId = tableId;
                 if (config) config.activeTableId = tableId;
                 renderTableCards();
                 updateStatusBanner();
             } else {
-                alert(data.error || 'Switch failed. Please try again.');
+                alert(data.error || 'Go Live failed. Please try again.');
                 btn.disabled = false;
-                btn.textContent = '\u25B6 Switch to This Table';
+                btn.textContent = '\u25B6 Go Live';
             }
         } catch (err) {
             alert('Could not connect to server.');
             btn.disabled = false;
-            btn.textContent = '\u25B6 Switch to This Table';
+            btn.textContent = '\u25B6 Go Live';
         }
     }
 
@@ -239,6 +242,9 @@
             });
             var data = await res.json();
             if (res.ok && data.ok) {
+                if (data.stream && data.stream.ok === false) {
+                    alert('Stream stopped on the website, but FFmpeg may still be running: ' + (data.stream.error || 'unknown error'));
+                }
                 activeTableId = null;
                 if (config) config.activeTableId = null;
                 renderTableCards();

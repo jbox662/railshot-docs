@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/stream-engine.php';
 
 railshot_require_operator_api();
 
@@ -49,4 +50,10 @@ if (!railshot_save_config($config)) {
     railshot_json_response(['error' => 'Failed to save config'], 500);
 }
 
-railshot_json_response(['ok' => true, 'activeTableId' => $newActiveId]);
+$streamResult = railshot_stream_apply_active_table($newActiveId);
+
+railshot_json_response([
+    'ok' => true,
+    'activeTableId' => $newActiveId,
+    'stream' => $streamResult,
+]);
