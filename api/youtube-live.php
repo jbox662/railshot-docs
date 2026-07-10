@@ -64,7 +64,7 @@ if (!$videoId && $apiKey !== '') {
 
 // ── Build response ────────────────────────────────────────────────────────────
 if ($videoId) {
-    $embedUrl = 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1';
+    $embedUrl = 'https://www.youtube.com/embed/' . $videoId . '?autoplay=1&mute=1&controls=1&rel=0&playsinline=1';
     $result = [
         'ok'       => true,
         'videoId'  => $videoId,
