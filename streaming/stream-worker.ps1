@@ -1,4 +1,4 @@
-# RailShot Stream Worker — runs as SYSTEM via scheduled task.
+# RailShot Stream Worker - runs as SYSTEM via scheduled task.
 # Uses PowerShell (no PHP path required). Same JSON command protocol as the PHP worker.
 
 $ErrorActionPreference = 'Continue'
@@ -107,8 +107,8 @@ function Stop-LegacyTasks {
 function Stop-Ffmpeg {
     Stop-LegacyTasks
     for ($i = 0; $i -lt 15; $i++) {
-        foreach ($pid in Get-FfmpegPids) {
-            & taskkill.exe /F /T /PID $pid 2>$null | Out-Null
+        foreach ($ffmpegPid in Get-FfmpegPids) {
+            & taskkill.exe /F /T /PID $ffmpegPid 2>$null | Out-Null
         }
         & taskkill.exe /F /T /IM ffmpeg.exe 2>$null | Out-Null
         if (-not (Test-FfmpegRunning)) { break }
@@ -215,7 +215,7 @@ function Start-TableStream([string]$TableId) {
 
     $camera = Find-Camera $TableId
     if (-not $camera) {
-        return @{ ok = $false; error = "No camera configured for $TableId in cameras.conf — save live settings in admin." }
+        return @{ ok = $false; error = ('No camera configured for ' + $TableId + ' in cameras.conf - save live settings in admin.') }
     }
 
     $ffmpeg = Find-Ffmpeg
@@ -245,20 +245,20 @@ function Start-TableStream([string]$TableId) {
         Stop-Ffmpeg
         $state.tables[$TableId] = 'stopped'
         Set-StreamState $state
-        return @{ ok = $false; error = "FFmpeg exited right after start — check streaming/stream-$TableId.log" }
+        return @{ ok = $false; error = ('FFmpeg exited right after start - check streaming/stream-' + $TableId + '.log') }
     }
 
-    $pid = (Get-FfmpegPids | Select-Object -First 1)
-    $ws = @{ managedPid = $pid; activeTable = $TableId; startedAt = (Get-Epoch) } | ConvertTo-Json -Compress
+    $ffmpegPid = (Get-FfmpegPids | Select-Object -First 1)
+    $ws = @{ managedPid = $ffmpegPid; activeTable = $TableId; startedAt = (Get-Epoch) } | ConvertTo-Json -Compress
     Set-Content -Path $WorkerStateFile -Value $ws -Encoding UTF8
-    Write-WorkerLog "Started FFmpeg for $TableId (PID $pid)"
+    Write-WorkerLog ('Started FFmpeg for ' + $TableId + ' (PID ' + $ffmpegPid + ')')
 
     return @{
         ok         = $true
         action     = 'started'
         tableId    = $TableId
         sourcePort = (Get-RtspPort $camera.rtsp)
-        pid        = $pid
+        pid        = $ffmpegPid
     }
 }
 
@@ -298,7 +298,7 @@ function Invoke-Recovery {
 
     if ($liveTable -eq '') {
         if ($ffmpegRunning) {
-            Write-WorkerLog 'No table marked live — stopping stray FFmpeg'
+            Write-WorkerLog 'No table marked live - stopping stray FFmpeg'
             Stop-Ffmpeg
         }
         return

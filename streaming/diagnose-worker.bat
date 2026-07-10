@@ -9,7 +9,7 @@ set "HB=..\App_Data\railshot\stream-worker\heartbeat.json"
 
 echo [1] Scheduled task:
 schtasks /query /tn "RailShot-StreamWorker" /fo LIST /v 2>nul | findstr /i "TaskName Status Last Run Next"
-if errorlevel 1 echo     NOT FOUND — run install-stream-worker.bat as Administrator.
+if errorlevel 1 echo     NOT FOUND - run install-stream-worker.bat as Administrator.
 echo.
 
 echo [2] Start worker manually for 6 seconds:
