@@ -32,13 +32,18 @@ function Ensure-WorkerDir {
     }
 }
 
+function Write-Utf8NoBom([string]$Path, [string]$Content) {
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8)
+}
+
 function Write-Heartbeat {
     Ensure-WorkerDir
     $payload = @{
         ts  = Get-Epoch
         pid = $PID
     } | ConvertTo-Json -Compress
-    Set-Content -Path $HeartbeatFile -Value $payload -Encoding UTF8
+    Write-Utf8NoBom $HeartbeatFile $payload
 }
 
 function Sanitize-TableId([string]$Id) {
@@ -115,7 +120,7 @@ function Stop-Ffmpeg {
         Start-Sleep -Milliseconds 400
     }
     $state = @{ managedPid = 0; activeTable = ''; startedAt = 0 } | ConvertTo-Json -Compress
-    Set-Content -Path $WorkerStateFile -Value $state -Encoding UTF8
+    Write-Utf8NoBom $WorkerStateFile $state
 }
 
 function Get-StreamState {
@@ -147,7 +152,7 @@ function Set-StreamState($State) {
     }
     $out = @{ tables = $State.tables }
     $json = $out | ConvertTo-Json -Depth 5
-    Set-Content -Path $StateFile -Value $json -Encoding UTF8
+    Write-Utf8NoBom $StateFile $json
 }
 
 function Get-LiveTableId {
@@ -204,7 +209,7 @@ function Test-FfmpegStarted([int]$MaxMs = 6000) {
 
 function Write-Result($Result) {
     Ensure-WorkerDir
-    $Result | ConvertTo-Json -Depth 5 | Set-Content -Path $ResultFile -Encoding UTF8
+    Write-Utf8NoBom $ResultFile ($Result | ConvertTo-Json -Depth 5)
 }
 
 function Start-TableStream([string]$TableId) {
@@ -250,7 +255,7 @@ function Start-TableStream([string]$TableId) {
 
     $ffmpegPid = (Get-FfmpegPids | Select-Object -First 1)
     $ws = @{ managedPid = $ffmpegPid; activeTable = $TableId; startedAt = (Get-Epoch) } | ConvertTo-Json -Compress
-    Set-Content -Path $WorkerStateFile -Value $ws -Encoding UTF8
+    Write-Utf8NoBom $WorkerStateFile $ws
     Write-WorkerLog ('Started FFmpeg for ' + $TableId + ' (PID ' + $ffmpegPid + ')')
 
     return @{

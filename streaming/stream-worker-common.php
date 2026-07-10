@@ -33,15 +33,22 @@ function railshot_worker_state_file(): string
     return railshot_worker_dir() . DIRECTORY_SEPARATOR . 'worker-state.json';
 }
 
+function railshot_worker_read_json(string $file): ?array
+{
+    if (!file_exists($file)) {
+        return null;
+    }
+    $raw = file_get_contents($file) ?: '';
+    $raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw;
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : null;
+}
+
 /** @return array{alive:bool,ageSec:int|null,pid:int|null} */
 function railshot_stream_worker_status(int $maxAgeSec = 15): array
 {
-    $file = railshot_worker_heartbeat_file();
-    if (!file_exists($file)) {
-        return ['alive' => false, 'ageSec' => null, 'pid' => null];
-    }
-    $data = json_decode(file_get_contents($file) ?: '', true);
-    if (!is_array($data)) {
+    $data = railshot_worker_read_json(railshot_worker_heartbeat_file());
+    if ($data === null) {
         return ['alive' => false, 'ageSec' => null, 'pid' => null];
     }
     $ts = (int) ($data['ts'] ?? 0);
@@ -90,8 +97,8 @@ function railshot_stream_worker_send_command(string $action, string $tableId = '
     $elapsed = 0;
     while ($elapsed < $timeoutMs) {
         if (file_exists($resultFile)) {
-            $result = json_decode(file_get_contents($resultFile) ?: '', true);
-            if (is_array($result) && ($result['id'] ?? '') === $id) {
+            $result = railshot_worker_read_json($resultFile);
+            if ($result !== null && ($result['id'] ?? '') === $id) {
                 $result['id'] = $id;
                 return $result;
             }
