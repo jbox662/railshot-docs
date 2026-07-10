@@ -132,7 +132,28 @@ function railshot_streaming_launch_detached(string $cmd, string $logFile): bool
 
 function railshot_streaming_kill_ffmpeg(): void
 {
+    railshot_streaming_stop_scheduled_tasks();
     exec('taskkill /F /IM ffmpeg.exe 2>NUL');
+    usleep(500000);
+}
+
+/** Stop legacy Task Scheduler jobs that auto-restart table1 FFmpeg and override Go Live. */
+function railshot_streaming_stop_scheduled_tasks(): void
+{
+    exec('schtasks /query /fo TABLE /nh 2>NUL', $out);
+    foreach ($out as $line) {
+        if (preg_match('/(RailShot-\S+)/i', $line, $m)) {
+            exec('schtasks /end /tn "' . $m[1] . '" 2>NUL');
+        }
+    }
+}
+
+function railshot_streaming_rtsp_port(string $rtsp): string
+{
+    if (preg_match('#@[^/:]+:(\d+)#', $rtsp, $m)) {
+        return $m[1];
+    }
+    return '';
 }
 
 /** @return array{table:string,rtsp:string,ytKey:string}|null */

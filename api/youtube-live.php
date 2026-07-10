@@ -41,7 +41,9 @@ if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0755, true);
 }
 
-if (file_exists($cacheFile)) {
+$bustCache = trim($_GET['bust'] ?? '') !== '' || trim($_GET['tableId'] ?? '') !== '';
+
+if (!$bustCache && file_exists($cacheFile)) {
     $cached = json_decode(file_get_contents($cacheFile) ?: '', true);
     if (is_array($cached) && isset($cached['ts'])) {
         $ttl = ($cached['ok'] ?? false) ? $liveTtl : $offlineTtl;

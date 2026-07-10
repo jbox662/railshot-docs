@@ -52,6 +52,18 @@ if (!railshot_save_config($config)) {
 
 railshot_sync_cameras_conf();
 
+foreach ($config['live']['venues'] ?? [] as $venue) {
+    if ($venueId !== '' && ($venue['id'] ?? '') !== $venueId) {
+        continue;
+    }
+    foreach ($venue['tables'] ?? [] as $table) {
+        $ch = trim($table['youtubeChannelId'] ?? '');
+        if ($ch !== '') {
+            railshot_youtube_clear_channel_cache($ch);
+        }
+    }
+}
+
 $streamResult = railshot_stream_apply_active_table($newActiveId);
 
 railshot_json_response([

@@ -191,7 +191,11 @@
         if (existingYt) existingYt.remove();
         var iframe = document.createElement('iframe');
         iframe.className = 'yt-live-iframe';
-        iframe.src = embedUrl;
+        var bustedUrl = embedUrl;
+        if (bustedUrl.indexOf('_t=') === -1) {
+            bustedUrl += (bustedUrl.indexOf('?') !== -1 ? '&' : '?') + '_t=' + Date.now();
+        }
+        iframe.src = bustedUrl;
         iframe.setAttribute('frameborder', '0');
         iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         iframe.setAttribute('allowfullscreen', 'true');
@@ -210,7 +214,9 @@
         if (channelId) {
             setStatus('connecting', 'Finding live stream\u2026');
             showOverlay('Finding live stream\u2026', false, false);
-            fetch('/api/youtube-live.php?channelId=' + encodeURIComponent(channelId), { cache: 'no-store' })
+            fetch('/api/youtube-live.php?channelId=' + encodeURIComponent(channelId)
+                + '&tableId=' + encodeURIComponent(table.id || '')
+                + '&bust=' + Date.now(), { cache: 'no-store' })
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     if (data.ok && data.embedUrl) {
@@ -381,15 +387,16 @@
         }, CONFIG_POLL_MS);
     }
 
-    async function loadConfig() {
+    async function loadConfig(bustCache) {
         const params = new URLSearchParams(window.location.search);
         const venueId = params.get('venue') || '';
         const configUrl = venueId
             ? '/api/live-config.php?venue=' + encodeURIComponent(venueId)
             : '/api/live-config.php';
+        const url = bustCache ? configUrl + (configUrl.indexOf('?') !== -1 ? '&' : '?') + '_=' + Date.now() : configUrl;
 
         try {
-            const response = await fetch(configUrl, { cache: 'no-store' });
+            const response = await fetch(url, { cache: 'no-store' });
             if (response.ok) {
                 return await response.json();
             }
@@ -514,13 +521,16 @@
                         });
                         adminData.activeTableId = t.id;
                         renderBtns(t.id);
-                        const nextConfig = await loadConfig();
+                        const nextConfig = await loadConfig(true);
                         if (nextConfig) {
                             config = nextConfig;
                             buildTableList();
                             applyScoreboardOverlay();
                         }
-                        if (statusSpan) statusSpan.textContent = 'Now live: ' + t.name;
+                        var portNote = (result.stream && result.stream.sourcePort)
+                            ? ' (camera port ' + result.stream.sourcePort + ')'
+                            : '';
+                        if (statusSpan) statusSpan.textContent = 'Now live: ' + t.name + portNote;
                         setTimeout(function () { if (statusSpan) statusSpan.textContent = ''; }, 3000);
                     } catch (e) {
                         showSwitcherError(e && e.message ? e.message : 'Could not reach server');

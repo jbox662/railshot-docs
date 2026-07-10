@@ -9,6 +9,7 @@
 
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/stream-engine.php';
+require_once dirname(__DIR__) . '/streaming/streaming-common.php';
 
 $isAdmin = railshot_is_logged_in();
 
@@ -46,13 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $cam = railshot_resolve_stream_camera($table['id']);
         $tables[] = [
-            'id'          => $table['id'],
-            'name'        => $table['name'],
-            'overlayUrl'  => trim($table['overlayUrl'] ?? ''),
-            'streamReady' => $cam !== null,
-            'streamIssue' => $cam === null
+            'id'               => $table['id'],
+            'name'             => $table['name'],
+            'overlayUrl'       => trim($table['overlayUrl'] ?? ''),
+            'youtubeChannelId' => trim($table['youtubeChannelId'] ?? ''),
+            'streamReady'      => $cam !== null,
+            'streamIssue'      => $cam === null
                 ? railshot_stream_camera_missing_reason($table['id'])
                 : '',
+            'sourcePort'       => $cam !== null ? railshot_streaming_rtsp_port($cam['rtsp']) : '',
         ];
     }
 
@@ -115,6 +118,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     railshot_sync_cameras_conf();
+
+    // Clear YouTube live cache so the watch page picks up the new camera feed.
+    foreach ($config['live']['venues'] ?? [] as $venue) {
+        if ($venueId !== '' && ($venue['id'] ?? '') !== $venueId) {
+            continue;
+        }
+        foreach ($venue['tables'] ?? [] as $table) {
+            $ch = trim($table['youtubeChannelId'] ?? '');
+            if ($ch !== '') {
+                railshot_youtube_clear_channel_cache($ch);
+            }
+        }
+    }
 
     $streamResult = railshot_stream_apply_active_table($newActiveId);
 

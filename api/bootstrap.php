@@ -597,6 +597,19 @@ function railshot_resolve_stream_camera(string $tableId): ?array
         : null;
 }
 
+function railshot_youtube_clear_channel_cache(string $channelId): void
+{
+    $channelId = trim($channelId);
+    if ($channelId === '') {
+        return;
+    }
+    $cacheFile = RAILSHOT_DATA . DIRECTORY_SEPARATOR . 'yt-cache'
+        . DIRECTORY_SEPARATOR . 'live-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $channelId) . '.json';
+    if (file_exists($cacheFile)) {
+        @unlink($cacheFile);
+    }
+}
+
 function railshot_stream_camera_missing_reason(string $tableId): string
 {
     $tableId = railshot_sanitize_table_id($tableId);

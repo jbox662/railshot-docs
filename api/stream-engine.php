@@ -117,7 +117,12 @@ function railshot_stream_start_table(string $tableId): array
         return ['ok' => false, 'error' => 'FFmpeg did not stay running — check stream log'];
     }
 
-    return ['ok' => true, 'action' => 'started', 'tableId' => $tableId];
+    return [
+        'ok' => true,
+        'action' => 'started',
+        'tableId' => $tableId,
+        'sourcePort' => railshot_streaming_rtsp_port($camera['rtsp']),
+    ];
 }
 
 /** @return array{ok:bool,error?:string,action?:string,tableId?:string} */

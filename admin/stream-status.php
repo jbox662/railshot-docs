@@ -5,6 +5,7 @@
  */
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/stream-engine.php';
+require_once dirname(__DIR__) . '/streaming/streaming-common.php';
 
 if (!railshot_admin_exists()) {
     http_response_code(403);
@@ -60,6 +61,7 @@ header('Content-Type: text/html; charset=utf-8');
                 <th>Table</th>
                 <th>Camera selected</th>
                 <th>RTSP resolved</th>
+                <th>RTSP port</th>
                 <th>Stream key</th>
                 <th>In cameras.conf</th>
                 <th>Ready?</th>
@@ -75,11 +77,18 @@ header('Content-Type: text/html; charset=utf-8');
                 $cam = railshot_resolve_stream_camera($id);
                 $ready = $cam !== null;
                 $issue = $ready ? '' : railshot_stream_camera_missing_reason($id);
+                $rtspPort = $cam !== null ? railshot_streaming_rtsp_port($cam['rtsp']) : ($rtsp !== '' ? railshot_streaming_rtsp_port($rtsp) : '');
             ?>
             <tr>
                 <td><strong><?php echo htmlspecialchars($table['name'] ?? $id); ?></strong><br><code><?php echo htmlspecialchars($id); ?></code></td>
                 <td class="<?php echo $cameraName !== '' ? 'ok' : 'bad'; ?>"><?php echo $cameraName !== '' ? htmlspecialchars($cameraName) : 'MISSING'; ?></td>
                 <td class="<?php echo $rtsp !== '' ? 'ok' : 'bad'; ?>"><?php echo $rtsp !== '' ? 'Yes (password hidden)' : 'MISSING'; ?></td>
+                <td class="<?php echo $rtspPort === '8555' || ($id === 'table2' && $rtspPort === '8555') ? 'ok' : ($rtspPort !== '' ? 'ok' : 'bad'); ?>">
+                    <?php echo $rtspPort !== '' ? htmlspecialchars($rtspPort) : '—'; ?>
+                    <?php if ($id === 'table2' && $rtspPort === '8554'): ?>
+                        <br><span class="bad">Should be 8555 for camera 2</span>
+                    <?php endif; ?>
+                </td>
                 <td class="<?php echo $streamKey !== '' ? 'ok' : 'bad'; ?>"><?php echo $streamKey !== '' ? 'Set (' . strlen($streamKey) . ' chars)' : 'MISSING'; ?></td>
                 <td class="<?php echo $inConf ? 'ok' : 'bad'; ?>"><?php echo $inConf ? 'Yes' : 'No'; ?></td>
                 <td class="<?php echo $ready ? 'ok' : 'bad'; ?>"><?php echo $ready ? 'YES' : 'NO'; ?></td>
@@ -101,6 +110,8 @@ header('Content-Type: text/html; charset=utf-8');
         </ul>
     <?php endif; ?>
 
-    <p style="color:#888;margin-top:2rem;font-size:0.9rem">Delete this file from the server when finished: <code>admin/stream-status.php</code></p>
+    <p style="color:#fbbf24;margin-top:1.5rem"><strong>Still seeing camera 1 after switching?</strong>
+        Check that table2 uses RTSP port <strong>8555</strong> (not 8554), has its <strong>own YouTube stream key</strong>,
+        and delete old Windows scheduled tasks: <code>schtasks /delete /tn "RailShot-table1" /f</code></p>
 </body>
 </html>
