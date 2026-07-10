@@ -94,6 +94,36 @@
         if (videoFitFullBtn) {
             videoFitFullBtn.addEventListener('click', function () { setVideoFit('full'); });
         }
+
+        // Fullscreen button — triggers fullscreen on the video-wrapper so the
+        // Scoreholio overlay stays visible (unlike YouTube's native fullscreen).
+        var fsBtn = document.getElementById('videoFitFullscreen');
+        if (fsBtn && videoWrapperEl) {
+            fsBtn.addEventListener('click', function () {
+                var el = videoWrapperEl;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen();
+                } else if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                } else if (el.mozRequestFullScreen) {
+                    el.mozRequestFullScreen();
+                } else if (el.msRequestFullscreen) {
+                    el.msRequestFullscreen();
+                }
+            });
+
+            // Update button state when fullscreen changes
+            document.addEventListener('fullscreenchange', function () {
+                var isFull = !!document.fullscreenElement;
+                fsBtn.setAttribute('aria-pressed', isFull ? 'true' : 'false');
+                fsBtn.classList.toggle('active', isFull);
+            });
+            document.addEventListener('webkitfullscreenchange', function () {
+                var isFull = !!document.webkitFullscreenElement;
+                fsBtn.setAttribute('aria-pressed', isFull ? 'true' : 'false');
+                fsBtn.classList.toggle('active', isFull);
+            });
+        }
     }
 
     function applyViewerLayout() {

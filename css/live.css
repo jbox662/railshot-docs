@@ -753,3 +753,40 @@
 .video-wrapper:has(.yt-live-iframe) {
     max-height: none;
 }
+
+/* ── Fullscreen mode: video-wrapper fills screen, overlay stays on top ─────── */
+.video-wrapper:fullscreen,
+.video-wrapper:-webkit-full-screen,
+.video-wrapper:-moz-full-screen,
+.video-wrapper:-ms-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-wrapper:fullscreen .yt-live-iframe,
+.video-wrapper:-webkit-full-screen .yt-live-iframe,
+.video-wrapper:-moz-full-screen .yt-live-iframe,
+.video-wrapper:-ms-fullscreen .yt-live-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.video-wrapper:fullscreen .scoreboard-overlay,
+.video-wrapper:-webkit-full-screen .scoreboard-overlay,
+.video-wrapper:-moz-full-screen .scoreboard-overlay,
+.video-wrapper:-ms-fullscreen .scoreboard-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100% !important;
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
+}
