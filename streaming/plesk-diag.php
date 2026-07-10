@@ -1,50 +1,73 @@
 <?php
 /**
- * RailShot TV — FFmpeg Diagnostic Script
- * Run once via Plesk Scheduled Tasks → Run a PHP script
- * Script: httpdocs/streaming/plesk-diag.php
- * Check output in: httpdocs/streaming/diag.log
+ * RailShot TV — FFmpeg diagnostic (CLI or admin-only).
+ * Plesk Scheduled Tasks → Run a PHP script → httpdocs/streaming/plesk-diag.php
+ * Output: httpdocs/streaming/diag.log
  */
 
-$logFile = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\diag.log';
+require_once __DIR__ . '/streaming-common.php';
+railshot_streaming_require_cli_or_admin();
 
-function dlog($msg) {
+$logFile = __DIR__ . DIRECTORY_SEPARATOR . 'diag.log';
+
+function dlog(string $msg): void
+{
     global $logFile;
-    $line = date('[Y-m-d H:i:s]') . ' ' . $msg . "\n";
+    $safe = railshot_streaming_redact($msg);
+    $line = date('[Y-m-d H:i:s]') . ' ' . $safe . "\n";
     file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
     echo $line;
 }
 
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
     dlog("PHP ERROR [$errno] $errstr on line $errline");
     return true;
 });
 
-dlog("=== DIAGNOSTIC START ===");
+dlog('=== DIAGNOSTIC START ===');
 
-$ffmpeg   = 'C:\\Inetpub\\vhosts\\railshottv.com\\httpdocs\\streaming\\ffmpeg.exe';
-$rtsp     = 'rtsp://admin:decoder1@140.106.76.67:8554/h264Preview_01_main';
-$ytKey    = 'x0b3-tqcg-qqcg-shxk-ee8p';
-$ytUrl    = "rtmp://a.rtmp.youtube.com/live2/$ytKey";
+$ffmpeg = railshot_streaming_find_ffmpeg();
+if (!$ffmpeg) {
+    dlog('ERROR: ffmpeg not found.');
+    dlog('=== DIAGNOSTIC DONE ===');
+    exit(1);
+}
+dlog('FFmpeg path: ' . $ffmpeg);
 
-dlog("FFmpeg path: $ffmpeg");
-dlog("RTSP URL:    $rtsp");
-dlog("YouTube URL: $ytUrl");
+$confFile = railshot_streaming_conf_path();
+$cameras = railshot_streaming_parse_cameras($confFile);
+if (empty($cameras)) {
+    dlog('ERROR: No cameras in cameras.conf at ' . $confFile);
+    dlog('=== DIAGNOSTIC DONE ===');
+    exit(1);
+}
 
-// Test 1: Can we reach the RTSP camera at all? (probe only, 10 sec timeout)
-dlog("--- Test 1: Probing RTSP camera (10 sec) ---");
-$probeCmd = '"' . $ffmpeg . '" -loglevel verbose -rtsp_transport tcp -timeout 10000000 -i "' . $rtsp . '" -t 5 -f null - 2>&1';
-dlog("Running: $probeCmd");
+$camera = $cameras[0];
+$rtsp = $camera['rtsp'];
+$ytUrl = 'rtmp://a.rtmp.youtube.com/live2/' . $camera['ytKey'];
+
+dlog('Camera table: ' . $camera['table']);
+dlog('RTSP URL:    ' . $rtsp);
+dlog('YouTube URL: ' . $ytUrl);
+
+dlog('--- Test 1: Probing RTSP camera (10 sec) ---');
+$probeCmd = '"' . $ffmpeg . '" -loglevel warning -rtsp_transport tcp -timeout 10000000 '
+    . '-i "' . $rtsp . '" -t 5 -f null - 2>&1';
+dlog('Running probe for table ' . $camera['table']);
 exec($probeCmd, $probeOut, $probeRet);
-dlog("Exit code: $probeRet");
-foreach ($probeOut as $l) dlog("  PROBE: $l");
+dlog('Exit code: ' . $probeRet);
+foreach ($probeOut as $l) {
+    dlog('  PROBE: ' . $l);
+}
 
-// Test 2: Can we connect to YouTube RTMP?
-dlog("--- Test 2: Testing YouTube RTMP connection (5 sec) ---");
-$rtmpCmd = '"' . $ffmpeg . '" -loglevel verbose -f lavfi -i testsrc=duration=5:size=1280x720:rate=30 -f flv "' . $ytUrl . '" 2>&1';
-dlog("Running: $rtmpCmd");
+dlog('--- Test 2: Testing YouTube RTMP connection (5 sec) ---');
+$rtmpCmd = '"' . $ffmpeg . '" -loglevel warning -f lavfi -i testsrc=duration=5:size=1280x720:rate=30 '
+    . '-f flv "' . $ytUrl . '" 2>&1';
+dlog('Running RTMP test');
 exec($rtmpCmd, $rtmpOut, $rtmpRet);
-dlog("Exit code: $rtmpRet");
-foreach ($rtmpOut as $l) dlog("  RTMP: $l");
+dlog('Exit code: ' . $rtmpRet);
+foreach ($rtmpOut as $l) {
+    dlog('  RTMP: ' . $l);
+}
 
-dlog("=== DIAGNOSTIC DONE ===");
+dlog('=== DIAGNOSTIC DONE ===');

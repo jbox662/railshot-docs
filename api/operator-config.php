@@ -29,12 +29,16 @@ foreach ($venue['tables'] ?? [] as $table) {
         continue;
     }
     $tableOverlayUrl = trim($table['overlayUrl'] ?? '');
+    $youtubeChannelId = trim($table['youtubeChannelId'] ?? '');
+    $youtubeUrl = trim($table['youtubeUrl'] ?? '');
     $tables[] = [
-        'id'         => $table['id'],
-        'name'       => $table['name'],
-        'youtubeUrl' => trim($table['youtubeUrl'] ?? ''),
-        'rtspUrl'    => !empty($table['rtspUrl']) ? '(configured)' : '', // don't expose real RTSP URL
-        'overlayUrl' => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
+        'id'               => $table['id'],
+        'name'             => $table['name'],
+        'youtubeUrl'       => $youtubeUrl,
+        'youtubeChannelId' => $youtubeChannelId,
+        'hasYoutubeSource' => $youtubeChannelId !== '' || $youtubeUrl !== '',
+        'rtspUrl'          => !empty($table['rtspUrl']) ? '(configured)' : '', // don't expose real RTSP URL
+        'overlayUrl'       => $tableOverlayUrl !== '' ? $tableOverlayUrl : $venueOverlayUrl,
     ];
 }
 
