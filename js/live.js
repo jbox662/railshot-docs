@@ -131,7 +131,7 @@
     }
 
     // ── YouTube iframe player ────────────────────────────────────────────────
-    var YT_PARAMS = 'autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1';
+    var YT_PARAMS = 'autoplay=1&mute=1&controls=1&rel=0&playsinline=1';
 
     function buildEmbedUrl(youtubeUrl) {
         var embedUrl = youtubeUrl;
